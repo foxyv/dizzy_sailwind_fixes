@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>Dizzy.Fixes</AssemblyName>
+    <Product>Dizzy Sailwind Fixes</Product>
+    <Version>0.1.0</Version>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!-- Override: dotnet build -p:SailwindDir=C:\path\to\Sailwind -->
+    <SailwindDir Condition="'$(SailwindDir)' == ''">D:\SteamLibrary\steamapps\common\Sailwind</SailwindDir>
+    <ManagedDir>$(SailwindDir)\Sailwind_Data\Managed</ManagedDir>
+    <BepInExPluginsDir>$(SailwindDir)\BepInEx\plugins</BepInExPluginsDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.Core" Version="5.4.21" />
+    <PackageReference Include="HarmonyX" Version="2.10.2" />
+    <PackageReference Include="UnityEngine.Modules" Version="2019.1.10" IncludeAssets="compile" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(ManagedDir)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="DeployToSailwind" AfterTargets="Build" Condition="'$(DeployOnBuild)' != 'false' And Exists('$(BepInExPluginsDir)')">
+    <MakeDir Directories="$(BepInExPluginsDir)\Dizzy.Fixes" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExPluginsDir)\Dizzy.Fixes" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Deployed $(TargetFileName) → $(BepInExPluginsDir)\Dizzy.Fixes\" />
+  </Target>
+
+</Project>
