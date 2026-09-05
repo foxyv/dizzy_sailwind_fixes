@@ -27,7 +27,7 @@ namespace Dizzy.Fixes
             _harmony = new Harmony(PluginGuid);
             _harmony.PatchAll(typeof(Plugin).Assembly);
 
-            Log.LogInfo($"{PluginName} v{PluginVersion} loaded (PreventInventoryWithdrawSip={FixesConfig.PreventInventoryWithdrawSip.Value}).");
+            Log.LogInfo($"{PluginName} v{PluginVersion} loaded (PreventInventoryWithdrawSip={FixesConfig.PreventInventoryWithdrawSip.Value}, PreventFailedTradeBookSale={FixesConfig.PreventFailedTradeBookSale.Value}, SkipUncleanableHullCleaning={FixesConfig.SkipUncleanableHullCleaning.Value}, KeepMooredBoats={FixesConfig.KeepMooredBoats.Value}, StabilizeStoveItemHover={FixesConfig.StabilizeStoveItemHover.Value}).");
         }
 
         private void OnDestroy()

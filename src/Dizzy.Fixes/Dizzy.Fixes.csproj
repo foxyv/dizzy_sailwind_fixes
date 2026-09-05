@@ -27,6 +27,10 @@
       <HintPath>$(ManagedDir)\Assembly-CSharp.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(ManagedDir)\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <Target Name="DeployToSailwind" AfterTargets="Build" Condition="'$(DeployOnBuild)' != 'false' And Exists('$(BepInExPluginsDir)')">

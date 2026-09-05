@@ -1,0 +1,55 @@
+# Dizzy Sailwind Fixes
+
+BepInEx 5 plugin for [Sailwind](https://store.steampowered.com/app/1764530/Sailwind/) that collects small gameplay and QoL fixes. Each fix is a Harmony patch and can be toggled in config.
+
+This repo follows the same plugin layout as [dizzy_sailwind_mods](https://github.com/foxyv/dizzy_sailwind_mods) (Dizzy Gamma / Dizzy Calendar).
+
+## Build
+
+```powershell
+dotnet build src\Dizzy.Fixes\Dizzy.Fixes.csproj -c Release
+```
+
+A successful build copies `Dizzy.Fixes.dll` to `BepInEx\plugins\Dizzy.Fixes\` in the Sailwind install (`D:\SteamLibrary\steamapps\common\Sailwind` by default). Override with:
+
+```powershell
+dotnet build src\Dizzy.Fixes\Dizzy.Fixes.csproj -c Release -p:SailwindDir=C:\path\to\Sailwind
+```
+
+Skip deploy: `-p:DeployOnBuild=false`
+
+## Fixes
+
+| Fix | Default | What it changes |
+|-----|---------|-----------------|
+| `PreventInventoryWithdrawSip` | on | Pulling a bottle or soup bowl from an inventory slot (number keys 1–5) no longer takes a sip. Vanilla does that because the item appears on top of the mouth collider while the inventory UI is collapsed. Holding drink still sips on the first press. |
+| `PreventFailedTradeBookSale` | on | Selling a commodity in the trade book no longer drops the market price (or pays gold) unless a crate/barrel is actually removed from the warehouse. Vanilla updates supply first, then can fail to find the physical good after a long session. |
+| `SkipUncleanableHullCleaning` | on | Cleaning a boat that cannot get dirty (e.g. Jong) no longer charges a hull-cleaning fee or aborts the rest of the shipyard order. Vanilla can take the money, throw, and revert sails/parts when you leave. |
+| `KeepMooredBoats` | on | Leaving a port and sailing back no longer lets tied-up ships and their anchors reset and drift. Vanilla sleeps distant boats and, on wake, reties dock lines at the drifted length and can pop the anchor. |
+| `StabilizeStoveItemHover` | on | Hovering food or a pot on a stove no longer flickers between the stove and the item. Vanilla keeps the first look-ray hit, so the outline swaps every physics frame while you cook. |
+
+Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.
+
+## Adding a fix
+
+1. Bind a `ConfigEntry<bool>` in `FixesConfig` (default **on**, describe the vanilla behavior it changes).
+2. Add a Harmony patch class under `src/Dizzy.Fixes/Patches/`.
+3. Return early from the patch when the toggle is off.
+4. Keep `PluginVersion` in `Plugin.cs` in sync with `<Version>` in the `.csproj`.
+
+Inspect game types in ILSpy against `Sailwind_Data\Managed\Assembly-CSharp.dll`. Do not commit game assemblies.
+
+## Package
+
+```powershell
+.\scripts\package-release.ps1
+```
+
+Install layout inside the zip:
+
+```
+Dizzy.Fixes/
+  Dizzy.Fixes.dll
+```
+
+Copy the `Dizzy.Fixes` folder into `BepInEx\plugins\`.

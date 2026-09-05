@@ -19,7 +19,7 @@ namespace Dizzy.Fixes
             _until = Time.realtimeSinceStartup + GraceSeconds;
         }
 
-        internal static bool ShouldBlock(Component component)
+        internal static bool ShouldBlockAccidentalSip(Component component)
         {
             if (!FixesConfig.PreventInventoryWithdrawSip.Value)
                 return false;
@@ -31,7 +31,44 @@ namespace Dizzy.Fixes
                 return false;
             }
 
-            return component == _item || component.GetComponent<ShipItem>() == _item;
+            if (component != _item && component.GetComponent<ShipItem>() != _item)
+                return false;
+
+            // Holding drink (Activate) is intentional — do not eat that first sip.
+            // Skipping MouthCol.BottleEnter caused OnTriggerEnter to be consumed
+            // during grace, so the player had to leave and re-enter the mouth.
+            return !IsDrinkHeld(component);
+        }
+
+        private static bool IsDrinkHeld(Component component)
+        {
+            ShipItemBottle bottle = component.GetComponent<ShipItemBottle>();
+            if (bottle != null)
+            {
+                if (bottle.IsDrinking())
+                    return true;
+                if (Traverse.Create(bottle).Field("drinking").GetValue<bool>())
+                    return true;
+                return AltHeld(bottle.held);
+            }
+
+            ShipItemSoup soup = component.GetComponent<ShipItemSoup>();
+            if (soup != null)
+            {
+                if (Traverse.Create(soup).Field("drinking").GetValue<bool>())
+                    return true;
+                return AltHeld(soup.held);
+            }
+
+            return false;
+        }
+
+        private static bool AltHeld(GoPointer pointer)
+        {
+            if (pointer == null)
+                return false;
+
+            return Traverse.Create(pointer).Method("AltButtonHeld").GetValue<bool>();
         }
     }
 
@@ -44,24 +81,12 @@ namespace Dizzy.Fixes
         }
     }
 
-    // Inventory slots sit on the needs UI. With the UI closed (scale 0) that
-    // origin is at the camera / mouth, so enabling the bottle collider on
-    // withdraw immediately overlaps MouthCol and sips one unit.
-    [HarmonyPatch(typeof(MouthCol), nameof(MouthCol.BottleEnter))]
-    internal static class MouthColBottleEnterPatch
-    {
-        private static bool Prefix(BottleDrinking bottle)
-        {
-            return !InventorySipGuard.ShouldBlock(bottle);
-        }
-    }
-
     [HarmonyPatch(typeof(BottleDrinking), nameof(BottleDrinking.TryDrink))]
     internal static class BottleDrinkingTryDrinkPatch
     {
         private static bool Prefix(BottleDrinking __instance)
         {
-            return !InventorySipGuard.ShouldBlock(__instance);
+            return !InventorySipGuard.ShouldBlockAccidentalSip(__instance);
         }
     }
 }
