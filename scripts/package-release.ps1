@@ -1,8 +1,8 @@
 # Packages Dizzy Sailwind Fixes for GitHub Releases.
-# Usage: .\scripts\package-release.ps1 [-Version 0.1.0]
+# Usage: .\scripts\package-release.ps1 [-Version 0.2.0]
 
 param(
-    [string]$Version = "0.1.0"
+    [string]$Version = "0.2.0"
 )
 
 $ErrorActionPreference = "Stop"
