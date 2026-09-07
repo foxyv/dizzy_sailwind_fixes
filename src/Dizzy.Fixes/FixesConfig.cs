@@ -9,6 +9,8 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> SkipUncleanableHullCleaning;
         internal static ConfigEntry<bool> KeepMooredBoats;
         internal static ConfigEntry<bool> StabilizeStoveItemHover;
+        internal static ConfigEntry<bool> PreferHangingItemOnHook;
+        internal static ConfigEntry<bool> MuteCameraModeSound;
 
         internal static void Bind(ConfigFile config)
         {
@@ -41,6 +43,18 @@ namespace Dizzy.Fixes
                 "StabilizeStoveItemHover",
                 true,
                 "Do not flicker the hover outline between a stove and the food/pot sitting on it. Vanilla keeps the first raycast hit, which swaps every physics frame while you cook.");
+
+            PreferHangingItemOnHook = config.Bind(
+                "Fixes",
+                "PreferHangingItemOnHook",
+                true,
+                "Click the lantern or other hangable on a lamp hook instead of the hook itself. Vanilla hits the hook collider first, so a locked (nailed) hook keeps look-focus and the hanging item cannot be picked up.");
+
+            MuteCameraModeSound = config.Bind(
+                "Fixes",
+                "MuteCameraModeSound",
+                true,
+                "Do not play the UI click when toggling third-person boat camera (C / CameraMode). Vanilla plays buttonClick on both enter and exit.");
         }
     }
 }

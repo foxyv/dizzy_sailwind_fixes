@@ -27,6 +27,8 @@ Skip deploy: `-p:DeployOnBuild=false`
 | `SkipUncleanableHullCleaning` | on | Cleaning a boat that cannot get dirty (e.g. Jong) no longer charges a hull-cleaning fee or aborts the rest of the shipyard order. Vanilla can take the money, throw, and revert sails/parts when you leave. |
 | `KeepMooredBoats` | on | Leaving a port and sailing back no longer lets tied-up ships and their anchors reset and drift. Vanilla sleeps distant boats and, on wake, reties dock lines at the drifted length and can pop the anchor. |
 | `StabilizeStoveItemHover` | on | Hovering food or a pot on a stove no longer flickers between the stove and the item. Vanilla keeps the first look-ray hit, so the outline swaps every physics frame while you cook. |
+| `PreferHangingItemOnHook` | on | Looking at a lantern (or other hangable) on a lamp hook selects the hanging item, not the hook. Vanilla hits the hook collider first, so a locked (nailed) hook keeps focus and you cannot click the item. |
+| `MuteCameraModeSound` | on | Toggling third-person boat camera (C) no longer plays the UI click. Vanilla plays `buttonClick` when entering and leaving that view. |
 
 Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.
 

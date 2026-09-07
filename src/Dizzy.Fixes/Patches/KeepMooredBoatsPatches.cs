@@ -6,9 +6,12 @@ namespace Dizzy.Fixes
 {
     // BoatHorizon puts boats kinematic beyond ~1000 m. On return it wakes
     // them: PickupableBoatMooringRope rewrites the dock spring to the drifted
-    // distance (so the line no longer holds), and Anchor.ExtraFixedUpdate
-    // sees a joint impulse (or a short limit) and calls ReleaseAnchor. NPC
-    // and player boats at the quay then float away.
+    // distance (so the line no longer holds), Unity can drop connectedBody,
+    // and Anchor.ExtraFixedUpdate pops the hook. NPC and player boats then
+    // float away.
+    // Pause, load, and sleep also set nearby boats kinematic — including the
+    // one you are sailing. Only snap a dock pose after a distance sleep, and
+    // only while the boat is still tied up.
     internal static class BoatWakeGuard
     {
         private const float GraceSeconds = 3f;
@@ -62,53 +65,271 @@ namespace Dizzy.Fixes
         }
     }
 
-    internal static class MooringLengthMemory
+    internal static class MooringJointFix
     {
-        private static readonly Dictionary<int, float> MaxDistance = new Dictionary<int, float>();
-        private static readonly Dictionary<int, float> LengthSquared = new Dictionary<int, float>();
+        private const float SnapIfDriftedMeters = 2f;
 
-        internal static void Remember(SpringJoint spring, float lengthSquared)
+        private class JointSave
         {
-            if (spring == null)
-                return;
-            int id = spring.GetInstanceID();
-            MaxDistance[id] = spring.maxDistance;
-            LengthSquared[id] = lengthSquared;
+            internal float MaxDistance;
+            internal float LengthSquared;
+            internal Vector3 ConnectedAnchor;
+            internal float Spring;
+            internal float Damper;
         }
 
-        internal static bool TryRestore(SpringJoint spring, out float lengthSquared)
+        private class PoseSave
         {
-            lengthSquared = 0f;
-            if (spring == null)
-                return false;
+            internal Transform Dock;
+            internal Vector3 LocalPos;
+            internal Quaternion LocalRot;
+        }
 
-            int id = spring.GetInstanceID();
-            if (!MaxDistance.TryGetValue(id, out float maxDistance))
-                return false;
+        private static readonly Dictionary<int, JointSave> Joints = new Dictionary<int, JointSave>();
+        private static readonly Dictionary<int, PoseSave> Poses = new Dictionary<int, PoseSave>();
 
-            spring.maxDistance = maxDistance;
-            if (LengthSquared.TryGetValue(id, out lengthSquared))
-                return true;
+        internal static void RememberFromMoor(PickupableBoatMooringRope rope)
+        {
+            if (!TryReadRope(rope, out SpringJoint spring, out Rigidbody boat, out Vector3 anchor, out float lengthSquared))
+                return;
+            if (spring == null || boat == null)
+                return;
 
-            lengthSquared = maxDistance * maxDistance;
+            spring.autoConfigureConnectedAnchor = false;
+            Joints[spring.GetInstanceID()] = new JointSave
+            {
+                MaxDistance = spring.maxDistance,
+                LengthSquared = lengthSquared,
+                ConnectedAnchor = anchor,
+                Spring = spring.spring,
+                Damper = spring.damper
+            };
+        }
+
+        internal static void Forget(PickupableBoatMooringRope rope)
+        {
+            if (rope == null)
+                return;
+
+            Traverse t = Traverse.Create(rope);
+            SpringJoint spring = t.Field("mooredToSpring").GetValue<SpringJoint>();
+            if (spring != null)
+                Joints.Remove(spring.GetInstanceID());
+
+            Rigidbody boat = t.Field("boatRigidbody").GetValue<Rigidbody>();
+            if (boat != null && !HasMooredRope(boat, rope))
+                Poses.Remove(boat.GetInstanceID());
+        }
+
+        internal static void SnapshotBoatIfMoored(Rigidbody boat)
+        {
+            PickupableBoatMooringRope[] ropes = RopesOn(boat);
+            if (ropes == null)
+                return;
+
+            Transform dock = null;
+            for (int i = 0; i < ropes.Length; i++)
+            {
+                if (ropes[i] == null || !ropes[i].IsMoored())
+                    continue;
+                RememberFromMoor(ropes[i]);
+                SpringJoint spring = Traverse.Create(ropes[i]).Field("mooredToSpring").GetValue<SpringJoint>();
+                if (spring != null)
+                    dock = spring.transform;
+            }
+
+            if (dock == null)
+                return;
+
+            Poses[boat.GetInstanceID()] = new PoseSave
+            {
+                Dock = dock,
+                LocalPos = dock.InverseTransformPoint(boat.position),
+                LocalRot = Quaternion.Inverse(dock.rotation) * boat.rotation
+            };
+        }
+
+        internal static void RestoreBoat(Rigidbody boat)
+        {
+            if (boat == null)
+                return;
+
+            int boatId = boat.GetInstanceID();
+            if (!HasMooredRope(boat))
+            {
+                Poses.Remove(boatId);
+                return;
+            }
+
+            if (Poses.TryGetValue(boatId, out PoseSave pose) && pose.Dock != null)
+            {
+                Vector3 world = pose.Dock.TransformPoint(pose.LocalPos);
+                if ((world - boat.position).sqrMagnitude > SnapIfDriftedMeters * SnapIfDriftedMeters)
+                {
+                    boat.position = world;
+                    boat.rotation = pose.Dock.rotation * pose.LocalRot;
+                    boat.velocity = Vector3.zero;
+                    boat.angularVelocity = Vector3.zero;
+                }
+            }
+
+            PickupableBoatMooringRope[] ropes = RopesOn(boat);
+            if (ropes == null)
+                return;
+            for (int i = 0; i < ropes.Length; i++)
+                Ensure(ropes[i]);
+        }
+
+        internal static void Ensure(PickupableBoatMooringRope rope)
+        {
+            if (rope == null || !FixesConfig.KeepMooredBoats.Value)
+                return;
+            if (!TryReadRope(rope, out SpringJoint spring, out Rigidbody boat, out Vector3 anchor, out float lengthSquared))
+                return;
+            if (spring == null || boat == null)
+                return;
+
+            if (!Joints.TryGetValue(spring.GetInstanceID(), out JointSave saved))
+            {
+                saved = new JointSave
+                {
+                    MaxDistance = spring.maxDistance > 0.01f ? spring.maxDistance : Mathf.Sqrt(Mathf.Max(lengthSquared, 0f)),
+                    LengthSquared = lengthSquared,
+                    ConnectedAnchor = anchor,
+                    Spring = boat.mass * 6f,
+                    Damper = boat.mass * 12f
+                };
+            }
+
+            spring.autoConfigureConnectedAnchor = false;
+            spring.connectedBody = boat;
+            spring.connectedAnchor = saved.ConnectedAnchor;
+            spring.spring = saved.Spring > 0f ? saved.Spring : boat.mass * 6f;
+            spring.damper = saved.Damper > 0f ? saved.Damper : spring.spring * 2f;
+            spring.minDistance = 0f;
+            spring.maxDistance = saved.MaxDistance;
+            rope.currentRopeLengthSquared = saved.LengthSquared;
+
+            Collider col = spring.GetComponent<Collider>();
+            if (col != null)
+                col.enabled = false;
+        }
+
+        private static bool TryReadRope(
+            PickupableBoatMooringRope rope,
+            out SpringJoint spring,
+            out Rigidbody boat,
+            out Vector3 anchor,
+            out float lengthSquared)
+        {
+            Traverse t = Traverse.Create(rope);
+            spring = t.Field("mooredToSpring").GetValue<SpringJoint>();
+            boat = t.Field("boatRigidbody").GetValue<Rigidbody>();
+            anchor = t.Field("springAnchor").GetValue<Vector3>();
+            lengthSquared = rope.currentRopeLengthSquared;
             return true;
+        }
+
+        private static bool HasMooredRope(Rigidbody boat, PickupableBoatMooringRope except = null)
+        {
+            PickupableBoatMooringRope[] ropes = RopesOn(boat);
+            if (ropes == null)
+                return false;
+
+            for (int i = 0; i < ropes.Length; i++)
+            {
+                if (ropes[i] == null || ropes[i] == except)
+                    continue;
+                if (ropes[i].IsMoored())
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static PickupableBoatMooringRope[] RopesOn(Rigidbody boat)
+        {
+            if (boat == null)
+                return null;
+            BoatMooringRopes mooring = boat.GetComponent<BoatMooringRopes>();
+            if (mooring == null)
+                mooring = boat.GetComponentInChildren<BoatMooringRopes>();
+            if (mooring == null)
+                return null;
+            return mooring.ropes;
         }
     }
 
     [HarmonyPatch(typeof(BoatHorizon), "UpdateKinematic")]
     internal static class BoatHorizonWakePatch
     {
+        private static readonly HashSet<int> NearbySleep = new HashSet<int>();
+
         private static void Prefix(Rigidbody ___rigidbody, out bool __state)
         {
             __state = ___rigidbody != null && ___rigidbody.isKinematic;
         }
 
-        private static void Postfix(Rigidbody ___rigidbody, bool __state)
+        private static void Postfix(Rigidbody ___rigidbody, bool ___closeToPlayer, bool __state)
+        {
+            if (!FixesConfig.KeepMooredBoats.Value || ___rigidbody == null)
+                return;
+
+            int id = ___rigidbody.GetInstanceID();
+            bool kinematic = ___rigidbody.isKinematic;
+            if (!__state && kinematic)
+            {
+                if (___closeToPlayer)
+                {
+                    NearbySleep.Add(id);
+                    return;
+                }
+
+                NearbySleep.Remove(id);
+                MooringJointFix.SnapshotBoatIfMoored(___rigidbody);
+                return;
+            }
+
+            if (__state && !kinematic)
+            {
+                BoatWakeGuard.MarkAwake(___rigidbody);
+                if (NearbySleep.Remove(id))
+                    return;
+                MooringJointFix.RestoreBoat(___rigidbody);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(PickupableBoatMooringRope), nameof(PickupableBoatMooringRope.MoorTo))]
+    internal static class MooringMoorToPatch
+    {
+        private static void Postfix(PickupableBoatMooringRope __instance)
         {
             if (!FixesConfig.KeepMooredBoats.Value)
                 return;
-            if (__state && ___rigidbody != null && !___rigidbody.isKinematic)
-                BoatWakeGuard.MarkAwake(___rigidbody);
+            MooringJointFix.RememberFromMoor(__instance);
+        }
+    }
+
+    [HarmonyPatch(typeof(PickupableBoatMooringRope), nameof(PickupableBoatMooringRope.ChangeRopeLength))]
+    internal static class MooringLengthAdjustPatch
+    {
+        private static void Postfix(PickupableBoatMooringRope __instance, bool __result)
+        {
+            if (!FixesConfig.KeepMooredBoats.Value || !__result)
+                return;
+            MooringJointFix.RememberFromMoor(__instance);
+        }
+    }
+
+    [HarmonyPatch(typeof(PickupableBoatMooringRope), nameof(PickupableBoatMooringRope.Unmoor))]
+    internal static class MooringUnmoorPatch
+    {
+        private static void Prefix(PickupableBoatMooringRope __instance)
+        {
+            if (!FixesConfig.KeepMooredBoats.Value)
+                return;
+            MooringJointFix.Forget(__instance);
         }
     }
 
@@ -116,11 +337,10 @@ namespace Dizzy.Fixes
     internal static class MooringWakeLengthPatch
     {
         private static void Prefix(
+            PickupableBoatMooringRope __instance,
             ref bool ___wasKinematic,
             SpringJoint ___mooredToSpring,
-            Rigidbody ___boatRigidbody,
-            Vector3 ___springAnchor,
-            ref float ___currentRopeLengthSquared)
+            Rigidbody ___boatRigidbody)
         {
             if (!FixesConfig.KeepMooredBoats.Value)
                 return;
@@ -129,24 +349,11 @@ namespace Dizzy.Fixes
 
             if (___boatRigidbody.isKinematic)
             {
-                MooringLengthMemory.Remember(___mooredToSpring, ___currentRopeLengthSquared);
+                ___wasKinematic = true;
                 return;
             }
 
-            if (!___wasKinematic)
-                return;
-
-            if (___mooredToSpring.connectedBody == null)
-            {
-                ___mooredToSpring.connectedBody = ___boatRigidbody;
-                ___mooredToSpring.connectedAnchor = ___springAnchor;
-            }
-
-            if (MooringLengthMemory.TryRestore(___mooredToSpring, out float lengthSquared))
-                ___currentRopeLengthSquared = lengthSquared;
-
-            // Keep the length from MoorTo; vanilla overwrites it with the
-            // (possibly drifted) distance after kinematic sleep.
+            MooringJointFix.Ensure(__instance);
             ___wasKinematic = false;
         }
     }
