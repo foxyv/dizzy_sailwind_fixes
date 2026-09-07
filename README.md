@@ -30,6 +30,9 @@ Skip deploy: `-p:DeployOnBuild=false`
 | `PreferHangingItemOnHook` | on | Looking at a lantern (or other hangable) on a lamp hook selects the hanging item, not the hook. Vanilla hits the hook collider first, so a locked (nailed) hook keeps focus and you cannot click the item. |
 | `MuteCameraModeSound` | on | Toggling third-person boat camera (C) no longer plays the UI click. Vanilla plays `buttonClick` when entering and leaving that view. |
 | `PreferDroppedAnchorLook` | on | Looking at a dropped or set anchor still selects it when it is sitting in or under the ground. Vanilla's look ray hits terrain first, especially after placing the hook by hand on land, so you cannot click it. |
+| `RightClickNearestDockMooring` | on | Right-click while holding a mooring line throws it to the nearest free dock cleat. Vanilla left-click needs a precise 1.8 m look on the post, which dock mesh often blocks (especially Gold Rock). |
+| `RightClickNearestDockMooringFeet` | 15 | How far (in feet) that right-click will search for a free cleat. |
+| `PreferMooredDockLineLook` | on | Looking at a mooring line tied to a cleat still selects the line when dock mesh or the boat-push collider is in front of it. Vanilla's look ray hits the quay first, so you cannot click the knot. |
 
 Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.
 

@@ -12,6 +12,9 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> PreferHangingItemOnHook;
         internal static ConfigEntry<bool> MuteCameraModeSound;
         internal static ConfigEntry<bool> PreferDroppedAnchorLook;
+        internal static ConfigEntry<bool> RightClickNearestDockMooring;
+        internal static ConfigEntry<float> RightClickNearestDockMooringFeet;
+        internal static ConfigEntry<bool> PreferMooredDockLineLook;
 
         internal static void Bind(ConfigFile config)
         {
@@ -62,6 +65,24 @@ namespace Dizzy.Fixes
                 "PreferDroppedAnchorLook",
                 true,
                 "Do not lose look-focus on a dropped or set anchor to terrain. Vanilla's look ray hits the ground first, especially when you place the hook by hand on land, so the buried collider cannot be clicked.");
+
+            RightClickNearestDockMooring = config.Bind(
+                "Fixes",
+                "RightClickNearestDockMooring",
+                true,
+                "Right-click while holding a mooring line throws it to the nearest free dock cleat. Vanilla left-click needs a 1.8 m look on the tiny post, which dock mesh often blocks.");
+
+            RightClickNearestDockMooringFeet = config.Bind(
+                "Fixes",
+                "RightClickNearestDockMooringFeet",
+                15f,
+                "How far (in feet) right-click will search for a free dock cleat while holding a mooring line. Default 15.");
+
+            PreferMooredDockLineLook = config.Bind(
+                "Fixes",
+                "PreferMooredDockLineLook",
+                true,
+                "Click a mooring line on a dock cleat even when dock mesh or the boat-push collider is in front of it. Vanilla's look ray hits the quay first, so the tied knot cannot be picked up.");
         }
     }
 }
