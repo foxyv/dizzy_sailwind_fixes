@@ -29,6 +29,7 @@ Skip deploy: `-p:DeployOnBuild=false`
 | `StabilizeStoveItemHover` | on | Hovering food or a pot on a stove no longer flickers between the stove and the item. Vanilla keeps the first look-ray hit, so the outline swaps every physics frame while you cook. |
 | `PreferHangingItemOnHook` | on | Looking at a lantern (or other hangable) on a lamp hook selects the hanging item, not the hook. Vanilla hits the hook collider first, so a locked (nailed) hook keeps focus and you cannot click the item. |
 | `MuteCameraModeSound` | on | Toggling third-person boat camera (C) no longer plays the UI click. Vanilla plays `buttonClick` when entering and leaving that view. |
+| `PreferDroppedAnchorLook` | on | Looking at a dropped or set anchor still selects it when it is sitting in or under the ground. Vanilla's look ray hits terrain first, especially after placing the hook by hand on land, so you cannot click it. |
 
 Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.
 

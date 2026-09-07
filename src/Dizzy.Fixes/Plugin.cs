@@ -10,7 +10,7 @@ namespace Dizzy.Fixes
     {
         public const string PluginGuid = "com.dizzy.sailwind.fixes";
         public const string PluginName = "Dizzy Sailwind Fixes";
-        public const string PluginVersion = "0.2.0";
+        public const string PluginVersion = "0.2.1";
 
         internal static ManualLogSource Log;
         internal static Plugin Instance;
@@ -27,7 +27,7 @@ namespace Dizzy.Fixes
             _harmony = new Harmony(PluginGuid);
             _harmony.PatchAll(typeof(Plugin).Assembly);
 
-            Log.LogInfo($"{PluginName} v{PluginVersion} loaded (PreventInventoryWithdrawSip={FixesConfig.PreventInventoryWithdrawSip.Value}, PreventFailedTradeBookSale={FixesConfig.PreventFailedTradeBookSale.Value}, SkipUncleanableHullCleaning={FixesConfig.SkipUncleanableHullCleaning.Value}, KeepMooredBoats={FixesConfig.KeepMooredBoats.Value}, StabilizeStoveItemHover={FixesConfig.StabilizeStoveItemHover.Value}, PreferHangingItemOnHook={FixesConfig.PreferHangingItemOnHook.Value}, MuteCameraModeSound={FixesConfig.MuteCameraModeSound.Value}).");
+            Log.LogInfo($"{PluginName} v{PluginVersion} loaded (PreventInventoryWithdrawSip={FixesConfig.PreventInventoryWithdrawSip.Value}, PreventFailedTradeBookSale={FixesConfig.PreventFailedTradeBookSale.Value}, SkipUncleanableHullCleaning={FixesConfig.SkipUncleanableHullCleaning.Value}, KeepMooredBoats={FixesConfig.KeepMooredBoats.Value}, StabilizeStoveItemHover={FixesConfig.StabilizeStoveItemHover.Value}, PreferHangingItemOnHook={FixesConfig.PreferHangingItemOnHook.Value}, MuteCameraModeSound={FixesConfig.MuteCameraModeSound.Value}, PreferDroppedAnchorLook={FixesConfig.PreferDroppedAnchorLook.Value}).");
         }
 
         private void OnDestroy()

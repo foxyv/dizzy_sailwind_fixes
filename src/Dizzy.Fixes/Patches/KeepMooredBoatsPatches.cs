@@ -361,9 +361,11 @@ namespace Dizzy.Fixes
     [HarmonyPatch(typeof(Anchor), "ReleaseAnchor")]
     internal static class AnchorWakeReleasePatch
     {
-        private static bool Prefix(ConfigurableJoint ___joint)
+        private static bool Prefix(Anchor __instance, ConfigurableJoint ___joint)
         {
             if (!FixesConfig.KeepMooredBoats.Value)
+                return true;
+            if (__instance.held != null)
                 return true;
             if (___joint == null || ___joint.connectedBody == null)
                 return true;

@@ -11,6 +11,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> StabilizeStoveItemHover;
         internal static ConfigEntry<bool> PreferHangingItemOnHook;
         internal static ConfigEntry<bool> MuteCameraModeSound;
+        internal static ConfigEntry<bool> PreferDroppedAnchorLook;
 
         internal static void Bind(ConfigFile config)
         {
@@ -55,6 +56,12 @@ namespace Dizzy.Fixes
                 "MuteCameraModeSound",
                 true,
                 "Do not play the UI click when toggling third-person boat camera (C / CameraMode). Vanilla plays buttonClick on both enter and exit.");
+
+            PreferDroppedAnchorLook = config.Bind(
+                "Fixes",
+                "PreferDroppedAnchorLook",
+                true,
+                "Do not lose look-focus on a dropped or set anchor to terrain. Vanilla's look ray hits the ground first, especially when you place the hook by hand on land, so the buried collider cannot be clicked.");
         }
     }
 }
