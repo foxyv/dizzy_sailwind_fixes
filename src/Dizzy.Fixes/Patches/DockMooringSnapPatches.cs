@@ -6,11 +6,11 @@ namespace Dizzy.Fixes
     // Vanilla right-click on a held, untied mooring line does nothing.
     // Left-click attach needs a 1.8 m first-hit look on the tiny cleat,
     // which dock mesh and DockPushCol steal (Gold Rock especially).
+    // Towable-boat bollards are the same GPButtonDockMooring type on the
+    // hull; snapping to those springs the boat to itself.
     internal static class DockMooringSnap
     {
-        private const float FeetToMeters = 0.3048f;
-
-        internal static float RangeMeters
+        internal static float Range
         {
             get
             {
@@ -19,24 +19,29 @@ namespace Dizzy.Fixes
                     : 15f;
                 if (feet < 0.1f)
                     feet = 0.1f;
-                return feet * FeetToMeters;
+                return feet;
             }
         }
 
-        internal static GPButtonDockMooring NearestFree(Vector3 from)
+        internal static GPButtonDockMooring NearestFree(PickupableBoatMooringRope rope)
         {
+            if (rope == null)
+                return null;
+
+            Vector3 from = rope.transform.position;
+            Rigidbody boat = rope.GetBoatRigidbody();
             GPButtonDockMooring[] cleats = Object.FindObjectsOfType<GPButtonDockMooring>();
             if (cleats == null || cleats.Length == 0)
                 return null;
 
-            float range = RangeMeters;
+            float range = Range;
             float maxSqr = range * range;
             GPButtonDockMooring best = null;
             float bestSqr = maxSqr;
             for (int i = 0; i < cleats.Length; i++)
             {
                 GPButtonDockMooring cleat = cleats[i];
-                if (!IsFree(cleat))
+                if (!IsFree(cleat) || IsOnSameBoat(cleat, boat))
                     continue;
 
                 float sqr = (cleat.transform.position - from).sqrMagnitude;
@@ -48,6 +53,16 @@ namespace Dizzy.Fixes
             }
 
             return best;
+        }
+
+        private static bool IsOnSameBoat(GPButtonDockMooring cleat, Rigidbody boat)
+        {
+            if (cleat == null || boat == null)
+                return false;
+
+            Transform root = boat.transform;
+            Transform t = cleat.transform;
+            return t == root || t.IsChildOf(root);
         }
 
         private static bool IsFree(GPButtonDockMooring cleat)
@@ -77,7 +92,7 @@ namespace Dizzy.Fixes
             if (__instance.IsMoored())
                 return;
 
-            GPButtonDockMooring cleat = DockMooringSnap.NearestFree(__instance.transform.position);
+            GPButtonDockMooring cleat = DockMooringSnap.NearestFree(__instance);
             if (cleat == null)
                 return;
 
