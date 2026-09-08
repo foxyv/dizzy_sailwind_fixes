@@ -16,6 +16,8 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<float> RightClickNearestDockMooringFeet;
         internal static ConfigEntry<bool> PreferMooredDockLineLook;
         internal static ConfigEntry<bool> HideInventoryOnNeedsWarning;
+        internal static ConfigEntry<bool> PourSoupIntoMug;
+        internal static ConfigEntry<bool> KeepChipLogDeployed;
 
         internal static void Bind(ConfigFile config)
         {
@@ -90,6 +92,18 @@ namespace Dizzy.Fixes
                 "HideInventoryOnNeedsWarning",
                 true,
                 "Do not draw hotbar items on top of the hunger, thirst, or sleep bars. Vanilla scales those items with the whole needs UI, so they stack on the bars whenever a need flashes.");
+
+            PourSoupIntoMug = config.Bind(
+                "Fixes",
+                "PourSoupIntoMug",
+                true,
+                "Pour soup from a pot into a mug or cup, then drink it. Vanilla only pours water into the pot and drinks from the pot itself; clicking an empty mug places it instead.");
+
+            KeepChipLogDeployed = config.Bind(
+                "Fixes",
+                "KeepChipLogDeployed",
+                true,
+                "Do not reel the chip log in when the chip leaves the water in waves. Vanilla auto-returns whenever the bobber is airborne. Right-click still reels it in.");
         }
     }
 }

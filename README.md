@@ -34,6 +34,8 @@ Skip deploy: `-p:DeployOnBuild=false`
 | `RightClickNearestDockMooringFeet` | 15 | How far (in in-game feet) that right-click will search for a free cleat. |
 | `PreferMooredDockLineLook` | on | Looking at a mooring line tied to a cleat still selects the line when dock mesh or the boat-push collider is in front of it. Vanilla's look ray hits the quay first, so you cannot click the knot. |
 | `HideInventoryOnNeedsWarning` | on | Hunger, thirst, and sleep warnings show only the status bars. Vanilla scales hotbar items with the whole needs UI, so they stack on the bars whenever a need flashes. |
+| `PourSoupIntoMug` | on | Click an empty mug or cup on a soup pot to fill it, then drink. Vanilla only pours water into the pot and drinks from the pot; an empty mug is placed instead. |
+| `KeepChipLogDeployed` | on | A thrown chip log stays out in rough seas. Vanilla reels it in whenever the chip leaves the water. Right-click still winds it back. |
 
 Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.
 
