@@ -76,7 +76,7 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "RightClickNearestDockMooringFeet",
                 15f,
-                "How far (in feet) right-click will search for a free dock cleat while holding a mooring line. Default 15.");
+                "How far (in feet) right-click will search for a free dock cleat while holding a mooring line. Default 15. This is in-game feet (world units), not a real-world metric conversion.");
 
             PreferMooredDockLineLook = config.Bind(
                 "Fixes",
