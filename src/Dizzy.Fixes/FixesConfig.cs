@@ -40,7 +40,7 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "KeepMooredBoats",
                 true,
-                "Keep dock lines and anchors from resetting when you leave a port and come back. Vanilla sleeps distant boats and, on wake, reties springs at the drifted distance and can pop the anchor.");
+                "Keep dock lines at the length you set when you leave a port and come back. Vanilla sleeps distant boats, origin-shifts them off the quay, restretches springs on wake, and unmoors everything on load.");
 
             StabilizeStoveItemHover = config.Bind(
                 "Fixes",
