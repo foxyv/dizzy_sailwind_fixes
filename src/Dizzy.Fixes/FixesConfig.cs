@@ -15,6 +15,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> RightClickNearestDockMooring;
         internal static ConfigEntry<float> RightClickNearestDockMooringFeet;
         internal static ConfigEntry<bool> PreferMooredDockLineLook;
+        internal static ConfigEntry<bool> HideInventoryOnNeedsWarning;
 
         internal static void Bind(ConfigFile config)
         {
@@ -83,6 +84,12 @@ namespace Dizzy.Fixes
                 "PreferMooredDockLineLook",
                 true,
                 "Click a mooring line on a dock cleat even when dock mesh or the boat-push collider is in front of it. Vanilla's look ray hits the quay first, so the tied knot cannot be picked up.");
+
+            HideInventoryOnNeedsWarning = config.Bind(
+                "Fixes",
+                "HideInventoryOnNeedsWarning",
+                true,
+                "Do not draw hotbar items on top of the hunger, thirst, or sleep bars. Vanilla scales those items with the whole needs UI, so they stack on the bars whenever a need flashes.");
         }
     }
 }
