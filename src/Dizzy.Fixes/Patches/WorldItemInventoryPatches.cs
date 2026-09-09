@@ -8,15 +8,14 @@ namespace Dizzy.Fixes
     // WorldItemSpawner parents sold pickups to island scenery and only
     // RegisterToSave() when item.held. Inventory does not unparent. Sailing
     // away deactivates the island (item vanishes from the hotbar), then
-    // ItemRigidbody range-destroys it (not on a boat, layer 5 not 26). The
-    // spawner can then duplicate it. PrepareSaveData NRE on null chart lines
-    // or a destroyed prefab leaves SaveLoadManager.busy true forever.
+    // ItemRigidbody range-destroys it. The spawner can then duplicate it.
+    // PrepareSaveData NRE on null chart lines leaves SaveLoadManager.busy true.
+    //
+    // 0.2.9 unparented every sold pickup and skipped DestroyItem for hotbar
+    // items. That yanked boat items off the hull (jitter vs ItemRigidbody)
+    // and left copies the spawner kept replacing.
     internal static class WorldItemInventory
     {
-        internal const int BoatCacheParent = -2;
-        internal const int RecoveryParent = -3;
-        internal const int HotbarSlotMax = 100;
-
         private static bool _loggedSpawnerItem;
         private static bool _loggedWorld;
         private static bool _loggedSpawners;
@@ -41,6 +40,13 @@ namespace Dizzy.Fixes
             item.transform.parent = world;
         }
 
+        internal static bool IsOnBoat(ShipItem item)
+        {
+            if (item == null)
+                return false;
+            return item.currentActualBoat != null || item.currentWalkCol != null;
+        }
+
         internal static Transform GetWorld()
         {
             if (FloatingOriginManager.instance == null)
@@ -55,12 +61,6 @@ namespace Dizzy.Fixes
             }
 
             return FloatingOriginManager.instance.transform;
-        }
-
-        internal static bool IsInHotbar(ShipItem item)
-        {
-            int slot = TryInventorySlot(item);
-            return slot >= 0 && slot < HotbarSlotMax;
         }
 
         internal static bool IsInInventoryOrCarrier(ShipItem item)
@@ -82,34 +82,6 @@ namespace Dizzy.Fixes
                 Plugin.Log.LogWarning("KeepWorldItemsInInventory: GetCurrentInventorySlot failed: " + e.Message);
                 return -1;
             }
-        }
-
-        internal static int TryParentObject(ShipItem item)
-        {
-            if (item == null)
-                return 0;
-
-            SaveablePrefab saveable = item.GetComponent<SaveablePrefab>();
-            if (saveable == null)
-                return 0;
-
-            return saveable.GetParentObject();
-        }
-
-        internal static bool ShouldSkipDestroy(ShipItem item)
-        {
-            if (!Enabled())
-                return false;
-            if (item == null || !item.sold)
-                return false;
-            if (!IsInHotbar(item))
-                return false;
-
-            int parent = TryParentObject(item);
-            if (parent == BoatCacheParent || parent == RecoveryParent)
-                return false;
-
-            return true;
         }
 
         internal static void ClearHotbarSlot(ShipItem item)
@@ -222,6 +194,22 @@ namespace Dizzy.Fixes
                 return;
             if (__instance == null || !__instance.sold)
                 return;
+            if (WorldItemInventory.IsOnBoat(__instance))
+                return;
+
+            WorldItemInventory.UnparentToWorld(__instance);
+        }
+    }
+
+    [HarmonyPatch(typeof(ShipItem), nameof(ShipItem.OnEnterInventory))]
+    internal static class WorldItemUnparentOnInventoryPatch
+    {
+        private static void Postfix(ShipItem __instance)
+        {
+            if (!WorldItemInventory.Enabled())
+                return;
+            if (__instance == null || !__instance.sold)
+                return;
 
             WorldItemInventory.UnparentToWorld(__instance);
         }
@@ -242,23 +230,11 @@ namespace Dizzy.Fixes
     }
 
     [HarmonyPatch(typeof(ShipItem), nameof(ShipItem.DestroyItem))]
-    [HarmonyPriority(Priority.First)]
-    internal static class WorldItemSkipInventoryDestroyPatch
+    internal static class WorldItemClearSlotOnDestroyPatch
     {
-        private static bool Prefix(ShipItem __instance)
-        {
-            if (!WorldItemInventory.ShouldSkipDestroy(__instance))
-                return true;
-
-            WorldItemInventory.UnparentToWorld(__instance);
-            return false;
-        }
-
         private static void Postfix(ShipItem __instance)
         {
             if (!WorldItemInventory.Enabled())
-                return;
-            if (WorldItemInventory.ShouldSkipDestroy(__instance))
                 return;
 
             WorldItemInventory.ClearHotbarSlot(__instance);
