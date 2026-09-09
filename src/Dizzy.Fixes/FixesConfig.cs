@@ -7,7 +7,6 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> PreventInventoryWithdrawSip;
         internal static ConfigEntry<bool> PreventFailedTradeBookSale;
         internal static ConfigEntry<bool> SkipUncleanableHullCleaning;
-        internal static ConfigEntry<bool> KeepMooredBoats;
         internal static ConfigEntry<bool> StabilizeStoveItemHover;
         internal static ConfigEntry<bool> PreferHangingItemOnHook;
         internal static ConfigEntry<bool> MuteCameraModeSound;
@@ -38,12 +37,6 @@ namespace Dizzy.Fixes
                 "SkipUncleanableHullCleaning",
                 true,
                 "If a boat cannot get dirty (no cleanable hull, e.g. Jong), hull cleaning costs nothing and cannot abort the rest of the shipyard order. Vanilla can charge, then throw and revert sails/parts on exit.");
-
-            KeepMooredBoats = config.Bind(
-                "Fixes",
-                "KeepMooredBoats",
-                true,
-                "Keep dock lines at the length you set when you leave a port and come back. Vanilla sleeps distant boats, origin-shifts them off the quay, restretches springs on wake, and unmoors everything on load.");
 
             StabilizeStoveItemHover = config.Bind(
                 "Fixes",
