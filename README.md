@@ -36,6 +36,7 @@ Skip deploy: `-p:DeployOnBuild=false`
 | `PourSoupIntoMug` | on | Click an empty mug or cup on a soup pot to fill it, then drink. Vanilla only pours water into the pot and drinks from the pot; an empty mug is placed instead. |
 | `KeepChipLogDeployed` | on | A thrown chip log stays out in rough seas. Vanilla reels it in whenever the chip leaves the water. Right-click still winds it back. |
 | `PreventBoatCacheSpawnLoop` | on | Coming back to a boat skips saved items with a missing prefab instead of throwing. Vanilla throws mid-spawn and retries every frame, duplicating lanterns and other items already created. |
+| `KeepMirageMountainMap` | on | The small chart in the buried village north of Mirage Mountain stays in inventory after you leave. Vanilla parents it to island scenery, so sailing away hides it, can destroy it as out of range, then respawn a copy and fail to save. |
 
 Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.
 

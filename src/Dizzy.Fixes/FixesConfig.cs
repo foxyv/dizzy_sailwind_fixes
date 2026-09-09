@@ -18,6 +18,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> PourSoupIntoMug;
         internal static ConfigEntry<bool> KeepChipLogDeployed;
         internal static ConfigEntry<bool> PreventBoatCacheSpawnLoop;
+        internal static ConfigEntry<bool> KeepMirageMountainMap;
 
         internal static void Bind(ConfigFile config)
         {
@@ -104,6 +105,12 @@ namespace Dizzy.Fixes
                 "PreventBoatCacheSpawnLoop",
                 true,
                 "When a boat comes back into range, skip saved items whose prefab is missing instead of throwing. Vanilla throws mid-spawn and retries every frame, duplicating lanterns and other items already created.");
+
+            KeepMirageMountainMap = config.Bind(
+                "Fixes",
+                "KeepMirageMountainMap",
+                true,
+                "Keep the small Mirage Mountain village chart (prefab 165) after you leave the island. Vanilla parents it to island scenery, so sailing away hides it, can destroy it as out of range, then respawn a copy and fail to save.");
         }
     }
 }
