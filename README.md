@@ -35,6 +35,7 @@ Skip deploy: `-p:DeployOnBuild=false`
 | `HideInventoryOnNeedsWarning` | on | Hunger, thirst, and sleep warnings show only the status bars. Vanilla scales hotbar items with the whole needs UI, so they stack on the bars whenever a need flashes. |
 | `PourSoupIntoMug` | on | Click an empty mug or cup on a soup pot to fill it, then drink. Vanilla only pours water into the pot and drinks from the pot; an empty mug is placed instead. |
 | `KeepChipLogDeployed` | on | A thrown chip log stays out in rough seas. Vanilla reels it in whenever the chip leaves the water. Right-click still winds it back. |
+| `PreventBoatCacheSpawnLoop` | on | Coming back to a boat skips saved items with a missing prefab instead of throwing. Vanilla throws mid-spawn and retries every frame, duplicating lanterns and other items already created. |
 
 Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.
 

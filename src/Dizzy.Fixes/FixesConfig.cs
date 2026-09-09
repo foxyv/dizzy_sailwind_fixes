@@ -17,6 +17,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> HideInventoryOnNeedsWarning;
         internal static ConfigEntry<bool> PourSoupIntoMug;
         internal static ConfigEntry<bool> KeepChipLogDeployed;
+        internal static ConfigEntry<bool> PreventBoatCacheSpawnLoop;
 
         internal static void Bind(ConfigFile config)
         {
@@ -97,6 +98,12 @@ namespace Dizzy.Fixes
                 "KeepChipLogDeployed",
                 true,
                 "Do not reel the chip log in when the chip leaves the water in waves. Vanilla auto-returns whenever the bobber is airborne. Right-click still reels it in.");
+
+            PreventBoatCacheSpawnLoop = config.Bind(
+                "Fixes",
+                "PreventBoatCacheSpawnLoop",
+                true,
+                "When a boat comes back into range, skip saved items whose prefab is missing instead of throwing. Vanilla throws mid-spawn and retries every frame, duplicating lanterns and other items already created.");
         }
     }
 }
