@@ -547,6 +547,8 @@ namespace Dizzy.Fixes
         {
             if (!FixesConfig.PourSoupIntoMug.Value)
                 return;
+            if (WorldItemInventory.ShouldSkipDestroy(__instance))
+                return;
             ShipItemBottle mug = __instance.GetComponent<ShipItemBottle>();
             if (mug != null)
                 SoupMugs.Forget(mug);
