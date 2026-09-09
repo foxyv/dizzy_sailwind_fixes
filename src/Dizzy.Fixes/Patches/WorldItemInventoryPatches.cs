@@ -11,9 +11,10 @@ namespace Dizzy.Fixes
     // ItemRigidbody range-destroys it. The spawner can then duplicate it.
     // PrepareSaveData NRE on null chart lines leaves SaveLoadManager.busy true.
     //
-    // 0.2.9 unparented every sold pickup and skipped DestroyItem for hotbar
-    // items. That yanked boat items off the hull (jitter vs ItemRigidbody)
-    // and left copies the spawner kept replacing.
+    // 0.2.9 unparented every sold pickup and skipped DestroyItem.
+    // 0.2.10 still unparented lanterns: ShipItem.OnPickup postfix runs
+    // before HangableItem.DisconnectJoint, so a hooked lantern was yanked
+    // off the boat and BoatLocalItems kept respawning it.
     internal static class WorldItemInventory
     {
         private static bool _loggedSpawnerItem;
@@ -30,6 +31,8 @@ namespace Dizzy.Fixes
         {
             if (item == null)
                 return;
+            if (!ShouldUnparent(item))
+                return;
 
             Transform world = GetWorld();
             if (world == null)
@@ -40,11 +43,64 @@ namespace Dizzy.Fixes
             item.transform.parent = world;
         }
 
+        // Harmony postfix on ShipItem.OnPickup runs in the middle of
+        // HangableItem.OnPickup (base.OnPickup, then DisconnectJoint). Unparenting
+        // a lantern still on a hook yanks it off the boat; BoatLocalItems then
+        // respawns copies. Only detach island scenery parents, never hangables.
+        internal static bool ShouldUnparent(ShipItem item)
+        {
+            if (item == null || !item.sold)
+                return false;
+            if (IsOnBoat(item))
+                return false;
+            if (IsHangable(item))
+                return false;
+            return IsIslandParented(item);
+        }
+
         internal static bool IsOnBoat(ShipItem item)
         {
             if (item == null)
                 return false;
             return item.currentActualBoat != null || item.currentWalkCol != null;
+        }
+
+        internal static bool IsHangable(ShipItem item)
+        {
+            if (item == null)
+                return false;
+
+            HangableItem hangable = item.GetComponent<HangableItem>();
+            if (hangable != null && hangable.IsHanging())
+                return true;
+
+            if (item.GetComponent<ShipItemLampHook>() != null)
+                return true;
+
+            ItemRigidbody body = item.GetItemRigidbody();
+            return body != null && body.attached;
+        }
+
+        internal static bool IsIslandParented(ShipItem item)
+        {
+            if (item == null)
+                return false;
+
+            Transform t = item.transform.parent;
+            int guard = 0;
+            while (t != null && guard < 16)
+            {
+                if (t.GetComponent<IslandHorizon>() != null)
+                    return true;
+                if (t.GetComponent<IslandPerformanceSwitcher>() != null)
+                    return true;
+                if (t.GetComponent<IslandSceneryScene>() != null)
+                    return true;
+                t = t.parent;
+                guard++;
+            }
+
+            return false;
         }
 
         internal static Transform GetWorld()
@@ -192,10 +248,6 @@ namespace Dizzy.Fixes
         {
             if (!WorldItemInventory.Enabled())
                 return;
-            if (__instance == null || !__instance.sold)
-                return;
-            if (WorldItemInventory.IsOnBoat(__instance))
-                return;
 
             WorldItemInventory.UnparentToWorld(__instance);
         }
@@ -207,8 +259,6 @@ namespace Dizzy.Fixes
         private static void Postfix(ShipItem __instance)
         {
             if (!WorldItemInventory.Enabled())
-                return;
-            if (__instance == null || !__instance.sold)
                 return;
 
             WorldItemInventory.UnparentToWorld(__instance);
