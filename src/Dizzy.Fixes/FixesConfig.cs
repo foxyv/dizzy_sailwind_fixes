@@ -17,7 +17,6 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> HideInventoryOnNeedsWarning;
         internal static ConfigEntry<bool> PourSoupIntoMug;
         internal static ConfigEntry<bool> KeepChipLogDeployed;
-        internal static ConfigEntry<bool> KeepWorldItemsInInventory;
 
         internal static void Bind(ConfigFile config)
         {
@@ -98,12 +97,6 @@ namespace Dizzy.Fixes
                 "KeepChipLogDeployed",
                 true,
                 "Do not reel the chip log in when the chip leaves the water in waves. Vanilla auto-returns whenever the bobber is airborne. Right-click still reels it in.");
-
-            KeepWorldItemsInInventory = config.Bind(
-                "Fixes",
-                "KeepWorldItemsInInventory",
-                true,
-                "Keep world-spawned items (maps, village pickups) in inventory after you leave the island. Vanilla parents them to scenery, so sailing away can hide, destroy, duplicate them, and stop saves.");
         }
     }
 }

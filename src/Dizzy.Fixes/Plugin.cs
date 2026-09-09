@@ -10,7 +10,7 @@ namespace Dizzy.Fixes
     {
         public const string PluginGuid = "com.dizzy.sailwind.fixes";
         public const string PluginName = "Dizzy Sailwind Fixes";
-        public const string PluginVersion = "0.2.9";
+        public const string PluginVersion = "0.2.8";
 
         internal static ManualLogSource Log;
         internal static Plugin Instance;
@@ -27,7 +27,7 @@ namespace Dizzy.Fixes
             _harmony = new Harmony(PluginGuid);
             _harmony.PatchAll(typeof(Plugin).Assembly);
 
-            Log.LogInfo($"{PluginName} v{PluginVersion} loaded (PreventInventoryWithdrawSip={FixesConfig.PreventInventoryWithdrawSip.Value}, PreventFailedTradeBookSale={FixesConfig.PreventFailedTradeBookSale.Value}, SkipUncleanableHullCleaning={FixesConfig.SkipUncleanableHullCleaning.Value}, StabilizeStoveItemHover={FixesConfig.StabilizeStoveItemHover.Value}, PreferHangingItemOnHook={FixesConfig.PreferHangingItemOnHook.Value}, MuteCameraModeSound={FixesConfig.MuteCameraModeSound.Value}, PreferDroppedAnchorLook={FixesConfig.PreferDroppedAnchorLook.Value}, RightClickNearestDockMooring={FixesConfig.RightClickNearestDockMooring.Value}, RightClickNearestDockMooringFeet={FixesConfig.RightClickNearestDockMooringFeet.Value}, PreferMooredDockLineLook={FixesConfig.PreferMooredDockLineLook.Value}, HideInventoryOnNeedsWarning={FixesConfig.HideInventoryOnNeedsWarning.Value}, PourSoupIntoMug={FixesConfig.PourSoupIntoMug.Value}, KeepChipLogDeployed={FixesConfig.KeepChipLogDeployed.Value}, KeepWorldItemsInInventory={FixesConfig.KeepWorldItemsInInventory.Value}).");
+            Log.LogInfo($"{PluginName} v{PluginVersion} loaded (PreventInventoryWithdrawSip={FixesConfig.PreventInventoryWithdrawSip.Value}, PreventFailedTradeBookSale={FixesConfig.PreventFailedTradeBookSale.Value}, SkipUncleanableHullCleaning={FixesConfig.SkipUncleanableHullCleaning.Value}, StabilizeStoveItemHover={FixesConfig.StabilizeStoveItemHover.Value}, PreferHangingItemOnHook={FixesConfig.PreferHangingItemOnHook.Value}, MuteCameraModeSound={FixesConfig.MuteCameraModeSound.Value}, PreferDroppedAnchorLook={FixesConfig.PreferDroppedAnchorLook.Value}, RightClickNearestDockMooring={FixesConfig.RightClickNearestDockMooring.Value}, RightClickNearestDockMooringFeet={FixesConfig.RightClickNearestDockMooringFeet.Value}, PreferMooredDockLineLook={FixesConfig.PreferMooredDockLineLook.Value}, HideInventoryOnNeedsWarning={FixesConfig.HideInventoryOnNeedsWarning.Value}, PourSoupIntoMug={FixesConfig.PourSoupIntoMug.Value}, KeepChipLogDeployed={FixesConfig.KeepChipLogDeployed.Value}).");
         }
 
         private void OnDestroy()

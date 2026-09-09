@@ -35,7 +35,6 @@ Skip deploy: `-p:DeployOnBuild=false`
 | `HideInventoryOnNeedsWarning` | on | Hunger, thirst, and sleep warnings show only the status bars. Vanilla scales hotbar items with the whole needs UI, so they stack on the bars whenever a need flashes. |
 | `PourSoupIntoMug` | on | Click an empty mug or cup on a soup pot to fill it, then drink. Vanilla only pours water into the pot and drinks from the pot; an empty mug is placed instead. |
 | `KeepChipLogDeployed` | on | A thrown chip log stays out in rough seas. Vanilla reels it in whenever the chip leaves the water. Right-click still winds it back. |
-| `KeepWorldItemsInInventory` | on | World-spawned items (maps, village pickups) stay in inventory after you leave the island. Vanilla parents them to scenery, so sailing away can hide, destroy, or duplicate them and stop saves. |
 
 Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.
 
