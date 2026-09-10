@@ -149,26 +149,30 @@ namespace Dizzy.Fixes
             Refs.playerMouthCol.PlayDrinkSound();
 
             float water = contents.Water;
-            float energy = contents.Energy / water * sip;
-            float uncooked = contents.Uncooked / water * sip;
-            float vitamins = contents.Vitamins / water * sip;
-            float protein = contents.Protein / water * sip;
+            float portion = sip / water;
+            float energy = contents.Energy * portion;
+            float uncooked = contents.Uncooked * portion;
+            float vitamins = contents.Vitamins * portion;
+            float protein = contents.Protein * portion;
+            float spoiled = contents.Spoiled * portion;
 
             float cookedBonus = 1f;
             if (energy + uncooked > 0f)
                 cookedBonus = Mathf.Lerp(1f, 1.25f, energy / (energy + uncooked));
 
+            // Vanilla pot sips ~2*dt and does spoiled -= dE * spoiled, which
+            // explodes on a 1-unit mug gulp and tanks food on the last sip.
             float spoiledPct = 0f;
-            float food = contents.Energy + contents.Uncooked;
-            if (food > 0f)
-                spoiledPct = contents.Spoiled / food;
+            float sipFood = energy + uncooked;
+            if (sipFood > 0f)
+                spoiledPct = spoiled / sipFood;
 
             contents.Water -= sip;
             contents.Energy -= energy;
             contents.Uncooked -= uncooked;
             contents.Vitamins -= vitamins;
             contents.Protein -= protein;
-            contents.Spoiled -= (energy + uncooked) * contents.Spoiled;
+            contents.Spoiled -= spoiled;
 
             float hydration = sip;
             if (spoiledPct > 0.9f)
