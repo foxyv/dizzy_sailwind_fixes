@@ -4,6 +4,8 @@ BepInEx 5 plugin for [Sailwind](https://store.steampowered.com/app/1764530/Sailw
 
 This repo follows the same plugin layout as [dizzy_sailwind_mods](https://github.com/foxyv/dizzy_sailwind_mods) (Dizzy Gamma / Dizzy Calendar).
 
+Compatible with [ModVersionChecker](https://github.com/bryon82/SailwindModVersionChecker) when installed (optional; not a dependency). GitHub release tags must stay `vX.Y.Z` matching `PluginVersion`.
+
 ## Build
 
 ```powershell
