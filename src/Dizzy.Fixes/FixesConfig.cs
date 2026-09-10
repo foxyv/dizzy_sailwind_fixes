@@ -21,7 +21,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> PreventBoatCacheSpawnLoop;
         internal static ConfigEntry<bool> KeepMirageMountainMap;
         internal static ConfigEntry<bool> SuppressBogusSailSnap;
-        internal static ConfigEntry<bool> SuppressBogusSailSnapLog;
+        internal static ConfigEntry<bool> KeepLoadedSailsUnfurled;
 
         internal static void Bind(ConfigFile config)
         {
@@ -125,13 +125,13 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "SuppressBogusSailSnap",
                 true,
-                "Do not play the sail-snap crash or jerk the hull on floating-origin shift, sleep, or load. Vanilla sail hinges stay dynamic while only the boat rigidbody is shifted, so a lateen (especially the Big Dhow) slams the hull. A real gybe still snaps.");
+                "Do not play the sail-snap crash on floating-origin shift, sleep, or load. Vanilla sail hinges stay dynamic while only the boat rigidbody is shifted, so a lateen can slam and play the gybe sound. A real gybe still snaps. Does not freeze sail physics (that overwrote boom angle and broke save/load).");
 
-            SuppressBogusSailSnapLog = config.Bind(
+            KeepLoadedSailsUnfurled = config.Bind(
                 "Fixes",
-                "SuppressBogusSailSnapLog",
+                "KeepLoadedSailsUnfurled",
                 true,
-                "Log origin-shift sail freeze, muted snaps, skipped wind force, and allowed real gybes to BepInEx/LogOutput.log. Also plays a UI beep when the world origin actually jumps. Turn off after testing.");
+                "Remember each purchased boat's reef (furled / unfurled / in between) in the save and restore it on load. Vanilla has no reef field, so LoadGame unfurls every sail then furls every sail during the disclaimer. New games still start furled. Saves made before this fix have no reef data yet: set the sails how you want, then save once.");
         }
     }
 }

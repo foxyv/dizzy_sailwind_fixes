@@ -38,8 +38,8 @@ Skip deploy: `-p:DeployOnBuild=false`
 | `KeepChipLogDeployed` | on | A thrown chip log stays out in rough seas after the chip hits the water. Vanilla reels it in whenever the chip is airborne, including chop. The toss still reels until splash so the line does not pay out in the air. Right-click still winds it back. |
 | `PreventBoatCacheSpawnLoop` | on | Coming back to a boat skips saved items with a missing prefab instead of throwing. Vanilla throws mid-spawn and retries every frame, duplicating lanterns and other items already created. |
 | `KeepMirageMountainMap` | on | The small chart in the buried village north of Mirage Mountain stays in inventory after you leave. Vanilla parents it to island scenery, so sailing away hides it, can destroy it as out of range, then respawn a copy and fail to save. |
-| `SuppressBogusSailSnap` | on | Origin shift, sleep, and load no longer play a sail-snap crash or jerk the hull. Vanilla only shifts the boat rigidbody, so a lateen hinge (especially the Big Dhow) slams the hull. A real gybe still snaps. |
-| `SuppressBogusSailSnapLog` | on | Writes freeze / mute / skip-force / allowed-gybe lines to `BepInEx/LogOutput.log` and plays a UI beep when the world origin jumps. Turn off after testing. |
+| `SuppressBogusSailSnap` | on | Origin shift, sleep, and load no longer play a sail-snap crash. Vanilla only shifts the boat rigidbody, so a lateen hinge can slam and play the gybe sound. A real gybe still snaps. |
+| `KeepLoadedSailsUnfurled` | on | Restore each purchased boat's reef (furled / unfurled / partial) from the save. Vanilla does not store reef length, so load used to unfurl every sail then furl every sail. New games still start furled. Older saves need one new save after you set the sails. |
 
 Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.
 
