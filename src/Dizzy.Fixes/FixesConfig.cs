@@ -14,6 +14,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> RightClickNearestDockMooring;
         internal static ConfigEntry<float> RightClickNearestDockMooringFeet;
         internal static ConfigEntry<bool> PreferMooredDockLineLook;
+        internal static ConfigEntry<bool> RightClickBoatMooringCastOff;
         internal static ConfigEntry<bool> HideInventoryOnNeedsWarning;
         internal static ConfigEntry<bool> PourSoupIntoMug;
         internal static ConfigEntry<bool> KeepChipLogDeployed;
@@ -81,6 +82,12 @@ namespace Dizzy.Fixes
                 "PreferMooredDockLineLook",
                 true,
                 "Click a mooring line on a dock cleat even when dock mesh or the boat-push collider is in front of it. Vanilla's look ray hits the quay first, so the tied knot cannot be picked up.");
+
+            RightClickBoatMooringCastOff = config.Bind(
+                "Fixes",
+                "RightClickBoatMooringCastOff",
+                true,
+                "Right-click the boat end of a tied mooring line to cast off. Vanilla right-click picks up the coil (same as left-click) to pay the line in or out; left-click still does that.");
 
             HideInventoryOnNeedsWarning = config.Bind(
                 "Fixes",

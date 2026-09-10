@@ -32,6 +32,7 @@ Skip deploy: `-p:DeployOnBuild=false`
 | `RightClickNearestDockMooring` | on | Right-click while holding a mooring line throws it to the nearest free dock cleat. Vanilla left-click needs a precise 1.8 m look on the post, which dock mesh often blocks (especially Gold Rock). |
 | `RightClickNearestDockMooringFeet` | 15 | How far (in in-game feet) that right-click will search for a free cleat. |
 | `PreferMooredDockLineLook` | on | Looking at a mooring line tied to a cleat still selects the line when dock mesh or the boat-push collider is in front of it. Vanilla's look ray hits the quay first, so you cannot click the knot. |
+| `RightClickBoatMooringCastOff` | on | Right-click the boat end of a tied mooring line to cast off. Vanilla right-click picks up the coil (same as left-click) to pay the line in or out; left-click still does that. |
 | `HideInventoryOnNeedsWarning` | on | Hunger, thirst, and sleep warnings show only the status bars. Vanilla scales hotbar items with the whole needs UI, so they stack on the bars whenever a need flashes. |
 | `PourSoupIntoMug` | on | Click an empty mug or cup on a soup pot to fill it, then drink. Vanilla only pours water into the pot and drinks from the pot; an empty mug is placed instead. |
 | `KeepChipLogDeployed` | on | A thrown chip log stays out in rough seas after the chip hits the water. Vanilla reels it in whenever the chip is airborne, including chop. The toss still reels until splash so the line does not pay out in the air. Right-click still winds it back. |
