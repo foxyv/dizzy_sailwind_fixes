@@ -22,6 +22,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> KeepMirageMountainMap;
         internal static ConfigEntry<bool> SuppressBogusSailSnap;
         internal static ConfigEntry<bool> KeepLoadedSailsUnfurled;
+        internal static ConfigEntry<bool> DampenItemRoll;
 
         internal static void Bind(ConfigFile config)
         {
@@ -132,6 +133,12 @@ namespace Dizzy.Fixes
                 "KeepLoadedSailsUnfurled",
                 true,
                 "Remember each purchased boat's reef (furled / unfurled / in between) in the save and restore it on load. Vanilla has no reef field, so LoadGame unfurls every sail then furls every sail during the disclaimer. New games still start furled. Saves made before this fix have no reef data yet: set the sails how you want, then save once.");
+
+            DampenItemRoll = config.Bind(
+                "Fixes",
+                "DampenItemRoll",
+                true,
+                "Dropped bottles, mugs, fruit, and other capsule items stop rolling on a desk or deck instead of traveling a long way. Vanilla only settles mesh-collider items to kinematic when they sleep; capsules keep a very low angularDrag.");
         }
     }
 }

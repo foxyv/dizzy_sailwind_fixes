@@ -42,6 +42,7 @@ Skip deploy: `-p:DeployOnBuild=false`
 | `KeepMirageMountainMap` | on | The small chart in the buried village north of Mirage Mountain stays in inventory after you leave. Vanilla parents it to island scenery, so sailing away hides it, can destroy it as out of range, then respawn a copy and fail to save. |
 | `SuppressBogusSailSnap` | on | Origin shift, sleep, and load no longer play a sail-snap crash. Vanilla only shifts the boat rigidbody, so a lateen hinge can slam and play the gybe sound. A real gybe still snaps. |
 | `KeepLoadedSailsUnfurled` | on | Restore each purchased boat's reef (furled / unfurled / partial) from the save. Vanilla does not store reef length, so load used to unfurl every sail then furl every sail. New games still start furled. Older saves need one new save after you set the sails. |
+| `DampenItemRoll` | on | Dropped bottles, mugs, fruit, and other capsule items stop rolling on a desk or deck instead of traveling a long way. Vanilla only settles mesh-collider items when they sleep; capsules keep a very low angular drag. |
 
 Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.
 
