@@ -20,6 +20,8 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> KeepChipLogDeployed;
         internal static ConfigEntry<bool> PreventBoatCacheSpawnLoop;
         internal static ConfigEntry<bool> KeepMirageMountainMap;
+        internal static ConfigEntry<bool> SuppressBogusSailSnap;
+        internal static ConfigEntry<bool> SuppressBogusSailSnapLog;
 
         internal static void Bind(ConfigFile config)
         {
@@ -118,6 +120,18 @@ namespace Dizzy.Fixes
                 "KeepMirageMountainMap",
                 true,
                 "Keep the small Mirage Mountain village chart (prefab 165) after you leave the island. Vanilla parents it to island scenery, so sailing away hides it, can destroy it as out of range, then respawn a copy and fail to save.");
+
+            SuppressBogusSailSnap = config.Bind(
+                "Fixes",
+                "SuppressBogusSailSnap",
+                true,
+                "Do not play the sail-snap crash or jerk the hull on floating-origin shift, sleep, or load. Vanilla sail hinges stay dynamic while only the boat rigidbody is shifted, so a lateen (especially the Big Dhow) slams the hull. A real gybe still snaps.");
+
+            SuppressBogusSailSnapLog = config.Bind(
+                "Fixes",
+                "SuppressBogusSailSnapLog",
+                true,
+                "Log origin-shift sail freeze, muted snaps, skipped wind force, and allowed real gybes to BepInEx/LogOutput.log. Also plays a UI beep when the world origin actually jumps. Turn off after testing.");
         }
     }
 }
