@@ -47,6 +47,7 @@ Skip deploy: `-p:DeployOnBuild=false`
 | `KeepLookTextAboveSmoke` | on | Look and hold item text stays in front of pipe smoke. Vanilla world-space TextMesh shares the transparent queue with particles, and exhale smoke sits closer to the camera so it covers the label. |
 | `HammerNailSeconds` | 1 | How long (seconds) to hold right-click to nail an item. Vanilla is 2. Lower is faster. Unlock is still instant. |
 | `KeepMerchantSellScroll` | on | The merchant sell parchment stays open while you hold the item nearby, and follows the closer merchant when you walk between stalls. Vanilla closes it when the held item leaves the shopkeeper trigger, and will not open a second merchant while the first parchment is still up. |
+| `PreferSittingItemLook` | on | A mug, pipe, or other small item sitting on a desk, crate, or deck stays selectable when the look ray hits that surface first. Vanilla keeps the first collider, so a settled or flush-placed item is often only clickable from one side. |
 
 Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.
 

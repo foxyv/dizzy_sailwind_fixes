@@ -27,6 +27,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> KeepLookTextAboveSmoke;
         internal static ConfigEntry<float> HammerNailSeconds;
         internal static ConfigEntry<bool> KeepMerchantSellScroll;
+        internal static ConfigEntry<bool> PreferSittingItemLook;
 
         internal static void Bind(ConfigFile config)
         {
@@ -169,6 +170,12 @@ namespace Dizzy.Fixes
                 "KeepMerchantSellScroll",
                 true,
                 "Keep the merchant sell parchment open while you hold the item nearby, and move it to the closer merchant when you walk between stalls. Vanilla closes it when the held item leaves the shopkeeper trigger, and will not open a second merchant while the first parchment is still up.");
+
+            PreferSittingItemLook = config.Bind(
+                "Fixes",
+                "PreferSittingItemLook",
+                true,
+                "Click a mug, pipe, or other small item sitting on a desk, crate, or deck even when the look ray hits that surface first. Vanilla keeps the first collider, so a settled or flush-placed item is often only selectable from the exposed side.");
         }
     }
 }

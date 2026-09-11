@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
 
@@ -20,7 +21,8 @@ namespace Dizzy.Fixes
     {
         private const float MinFwdSqr = 0.0001f;
         internal const int IgnoreRaycastLayer = 2;
-        internal const int DefaultLayer = 0;
+
+        private static readonly Dictionary<int, int[]> SavedLayers = new Dictionary<int, int[]>();
 
         private static Transform _surface;
         private static Vector3 _localPoint;
@@ -60,6 +62,38 @@ namespace Dizzy.Fixes
             _localPoint = _surface.InverseTransformPoint(hit.point);
             _localNormal = _surface.InverseTransformDirection(hit.normal);
             _hasSurface = true;
+        }
+
+        internal static void SaveLayers(PickupableItem item)
+        {
+            if (item == null)
+                return;
+
+            Transform[] transforms = item.GetComponentsInChildren<Transform>(true);
+            int[] layers = new int[transforms.Length];
+            for (int i = 0; i < transforms.Length; i++)
+                layers[i] = transforms[i] != null ? transforms[i].gameObject.layer : 0;
+            SavedLayers[item.GetInstanceID()] = layers;
+        }
+
+        internal static void RestoreLayers(PickupableItem item)
+        {
+            if (item == null)
+                return;
+
+            int id = item.GetInstanceID();
+            int[] layers;
+            if (!SavedLayers.TryGetValue(id, out layers))
+                return;
+
+            SavedLayers.Remove(id);
+            Transform[] transforms = item.GetComponentsInChildren<Transform>(true);
+            int n = transforms.Length < layers.Length ? transforms.Length : layers.Length;
+            for (int i = 0; i < n; i++)
+            {
+                if (transforms[i] != null)
+                    transforms[i].gameObject.layer = layers[i];
+            }
         }
 
         internal static void SetHeldLayers(PickupableItem item, int layer)
@@ -277,6 +311,13 @@ namespace Dizzy.Fixes
     [HarmonyPatch(typeof(GoPointer), nameof(GoPointer.PickUpItem))]
     internal static class ItemPlaceAlignPickupLayerPatch
     {
+        private static void Prefix(PickupableItem item)
+        {
+            if (!ItemPlaceAlign.Enabled() || !ItemPlaceAlign.UsesSurfaceAlign(item))
+                return;
+            ItemPlaceAlign.SaveLayers(item);
+        }
+
         private static void Postfix(PickupableItem item)
         {
             if (!ItemPlaceAlign.Enabled() || !ItemPlaceAlign.UsesSurfaceAlign(item))
@@ -294,7 +335,7 @@ namespace Dizzy.Fixes
         {
             if (!ItemPlaceAlign.Enabled() || !ItemPlaceAlign.UsesSurfaceAlign(___heldItem))
                 return;
-            ItemPlaceAlign.SetHeldLayers(___heldItem, ItemPlaceAlign.DefaultLayer);
+            ItemPlaceAlign.RestoreLayers(___heldItem);
         }
     }
 
