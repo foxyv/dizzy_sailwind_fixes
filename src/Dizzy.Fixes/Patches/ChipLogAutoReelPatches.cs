@@ -1,26 +1,22 @@
 using System.Collections.Generic;
+using Crest;
 using HarmonyLib;
 using UnityEngine;
 
 namespace Dizzy.Fixes
 {
     // ShipItemChipLog.Update reels in whenever the chip is airborne.
-    // Crest waves flicker SimpleFloatingObject.InWater, so the line
-    // winds itself back in chop after it is in the water.
-    // InstantUnthrow (right-click) sets currentTargetLength directly
-    // and does not use ChangeLineLength.
+    // ChangeLineLength is a one-line adder and Mono may inline it, so
+    // patching that method does not stop the wind-in. After Update has
+    // subtracted autoReturnSpeed, add twice that back so chop pays the
+    // line out instead. InstantUnthrow (right-click) still sets
+    // currentTargetLength to minLength directly.
     //
-    // Skipping every negative ChangeLineLength while thrown also
-    // blocked the air-toss reel. The chip is still flying, useVelocity
-    // / useDeltaPos keep paying out, and the line stretches to maxLength
-    // with no reading. Only skip auto-reel after this throw has been
-    // in the water once.
+    // Wait until the throw animation finishes (or the chip is in the
+    // water) so the toss can still reel in the air.
     internal static class ChipLogDeployed
     {
-        private static readonly Dictionary<int, bool> HitWater = new Dictionary<int, bool>();
-
-        private static bool _loggedThrown;
-        private static bool _loggedFloater;
+        private static readonly Dictionary<int, bool> Deployed = new Dictionary<int, bool>();
 
         internal static bool Enabled()
         {
@@ -28,97 +24,84 @@ namespace Dizzy.Fixes
                 && FixesConfig.KeepChipLogDeployed.Value;
         }
 
-        internal static void NoteInWater(ShipItemChipLog log)
+        internal static void NoteDeployed(
+            ShipItemChipLog log,
+            bool thrown,
+            bool throwing,
+            SimpleFloatingObject floater)
         {
             if (!Enabled() || log == null)
                 return;
 
             int id = log.GetInstanceID();
-            Traverse thrown = Traverse.Create(log).Field("thrown");
-            if (!thrown.FieldExists())
+            if (!thrown)
             {
-                if (!_loggedThrown)
-                {
-                    Plugin.Log.LogWarning("KeepChipLogDeployed: ShipItemChipLog.thrown is missing; leaving vanilla auto-reel.");
-                    _loggedThrown = true;
-                }
-
+                Deployed.Remove(id);
                 return;
             }
 
-            if (!thrown.GetValue<bool>())
-            {
-                HitWater.Remove(id);
-                return;
-            }
+            bool inWater = floater != null && floater.InWater;
+            if (!throwing || inWater)
+                Deployed[id] = true;
+        }
 
-            if (BobberInWater(log))
-                HitWater[id] = true;
+        internal static bool IsDeployed(ShipItemChipLog log)
+        {
+            if (!Enabled() || log == null)
+                return false;
+            bool deployed;
+            return Deployed.TryGetValue(log.GetInstanceID(), out deployed) && deployed;
         }
 
         internal static void Forget(ShipItemChipLog log)
         {
             if (log != null)
-                HitWater.Remove(log.GetInstanceID());
+                Deployed.Remove(log.GetInstanceID());
         }
 
-        internal static bool ShouldSkipAutoReturn(ShipItemChipLog log, float value)
+        internal static void ReverseAirborneReturn(
+            ShipItemChipLog log,
+            SimpleFloatingObject floater,
+            Rigidbody body,
+            float autoReturnSpeed,
+            ref float currentTargetLength)
         {
-            if (!Enabled())
-                return false;
-            if (log == null || value >= 0f)
-                return false;
+            if (!IsDeployed(log))
+                return;
+            if (floater == null || body == null)
+                return;
+            if (floater.InWater || body.isKinematic)
+                return;
 
-            int id = log.GetInstanceID();
-            bool hit;
-            return HitWater.TryGetValue(id, out hit) && hit;
-        }
-
-        private static bool BobberInWater(ShipItemChipLog log)
-        {
-            Traverse floaterField = Traverse.Create(log).Field("bobberFloater");
-            if (!floaterField.FieldExists())
-            {
-                if (!_loggedFloater)
-                {
-                    Plugin.Log.LogWarning("KeepChipLogDeployed: ShipItemChipLog.bobberFloater is missing; leaving vanilla auto-reel.");
-                    _loggedFloater = true;
-                }
-
-                return false;
-            }
-
-            object floater = floaterField.GetValue();
-            if (floater == null || floater.Equals(null))
-                return false;
-
-            Traverse inWater = Traverse.Create(floater).Property("InWater");
-            if (inWater.PropertyExists())
-                return inWater.GetValue<bool>();
-
-            inWater = Traverse.Create(floater).Field("InWater");
-            if (inWater.FieldExists())
-                return inWater.GetValue<bool>();
-
-            return false;
+            currentTargetLength += 2f * autoReturnSpeed * Time.deltaTime;
         }
     }
 
     [HarmonyPatch(typeof(ShipItemChipLog), "Update")]
-    internal static class ChipLogNoteInWaterPatch
+    internal static class ChipLogKeepDeployedPatch
     {
-        private static void Postfix(ShipItemChipLog __instance)
+        private static void Prefix(
+            ShipItemChipLog __instance,
+            bool ___thrown,
+            bool ___throwing,
+            SimpleFloatingObject ___bobberFloater)
         {
-            ChipLogDeployed.NoteInWater(__instance);
+            ChipLogDeployed.NoteDeployed(__instance, ___thrown, ___throwing, ___bobberFloater);
         }
-    }
 
-    [HarmonyPatch(typeof(ShipItemChipLog), "ChangeLineLength")]
-    internal static class ChipLogAutoReelPatch
-    {
-        private static bool Prefix(ShipItemChipLog __instance, float value)
+        private static void Postfix(
+            ShipItemChipLog __instance,
+            SimpleFloatingObject ___bobberFloater,
+            Rigidbody ___bobberBody,
+            float ___autoReturnSpeed,
+            ref float ___currentTargetLength)
         {
-            return !ChipLogDeployed.ShouldSkipAutoReturn(__instance, value);
+            ChipLogDeployed.ReverseAirborneReturn(
+                __instance,
+                ___bobberFloater,
+                ___bobberBody,
+                ___autoReturnSpeed,
+                ref ___currentTargetLength);
         }
     }
 
