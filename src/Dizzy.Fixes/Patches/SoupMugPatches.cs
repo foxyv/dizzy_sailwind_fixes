@@ -10,6 +10,9 @@ namespace Dizzy.Fixes
     // Vanilla pours water into a soup pot (bottle.amount == 1) or drinks from
     // the pot. Clicking an empty mug on the pot places the mug. There is no
     // kettle-style pour of soup into a drinking cup.
+    // Mug.Update only drinks/spills when health is exactly 1, 2, or 3.
+    // Soup leftover is often fractional (pot water ticks by 2*dt), so 0.4
+    // in a cup cannot be drunk, dumped, or (if the pot is empty) refilled.
     internal static class SoupMugs
     {
         private const string Key = "Dizzy.Fixes.SoupMug.v1";
@@ -86,6 +89,26 @@ namespace Dizzy.Fixes
             return IsMug(mug) && HasSoup(mug);
         }
 
+        internal static bool HandleMugClick(ShipItemSoup pot, ShipItemBottle mug)
+        {
+            if (CanFillFromPot(pot, mug))
+                return Pour(pot, mug);
+            if (IsMug(mug) && HasSoup(mug) && (pot == null || pot.currentWater <= FullEpsilon))
+                return Dump(mug);
+            return Pour(pot, mug);
+        }
+
+        internal static bool Dump(ShipItemBottle mug)
+        {
+            if (!IsMug(mug) || !HasSoup(mug))
+                return false;
+            Forget(mug);
+            mug.EmptyBottle();
+            if (mug.itemRigidbodyC != null)
+                mug.itemRigidbodyC.UpdateMass();
+            return true;
+        }
+
         internal static bool Pour(ShipItemSoup pot, ShipItemBottle mug)
         {
             if (!CanFillFromPot(pot, mug))
@@ -125,6 +148,45 @@ namespace Dizzy.Fixes
                 mug.itemRigidbodyC.UpdateMass();
             WriteModData();
             return true;
+        }
+
+        internal static void TryFractionalSpillOrDrink(Mug mug, ShipItemBottle bottle)
+        {
+            if (mug == null || bottle == null)
+                return;
+            if (bottle.GetCapacity() == 9f)
+                return;
+
+            float level = bottle.health;
+            if (level <= 0f)
+                return;
+            if (level == 1f || level == 2f || level == 3f)
+                return;
+
+            float upright = mug.transform.up.y;
+            if (upright >= SpillUprightThreshold(level))
+                return;
+
+            if (bottle.amount != 9f && bottle.IsDrinking())
+            {
+                bottle.TryDrinkBottle();
+                return;
+            }
+
+            Traverse spill = Traverse.Create(mug).Method("Spill");
+            if (spill.MethodExists())
+                spill.GetValue();
+        }
+
+        private static float SpillUprightThreshold(float level)
+        {
+            if (level >= 3f)
+                return 0.85f;
+            if (level >= 2f)
+                return Mathf.Lerp(0.66f, 0.85f, level - 2f);
+            if (level >= 1f)
+                return Mathf.Lerp(0.52f, 0.66f, level - 1f);
+            return 0.52f;
         }
 
         internal static bool TryDrink(ShipItemBottle mug)
@@ -435,7 +497,7 @@ namespace Dizzy.Fixes
             ShipItemBottle mug = heldItem != null ? heldItem.GetComponent<ShipItemBottle>() : null;
             if (!SoupMugs.ShouldHandleMugClick(__instance, mug))
                 return true;
-            SoupMugs.Pour(__instance, mug);
+            SoupMugs.HandleMugClick(__instance, mug);
             return false;
         }
     }
@@ -472,7 +534,7 @@ namespace Dizzy.Fixes
                 return true;
             if (!SoupMugs.ShouldHandleMugClick(soup, __instance))
                 return true;
-            SoupMugs.Pour(soup, __instance);
+            SoupMugs.HandleMugClick(soup, __instance);
             return false;
         }
     }
@@ -521,7 +583,10 @@ namespace Dizzy.Fixes
                 return;
             ShipItemBottle bottle = __instance.GetComponent<ShipItemBottle>();
             if (bottle != null)
+            {
                 SoupMugs.SyncToHealth(bottle);
+                SoupMugs.TryFractionalSpillOrDrink(__instance, bottle);
+            }
         }
     }
 

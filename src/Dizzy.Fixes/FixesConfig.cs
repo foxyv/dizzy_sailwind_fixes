@@ -23,6 +23,10 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> SuppressBogusSailSnap;
         internal static ConfigEntry<bool> KeepLoadedSailsUnfurled;
         internal static ConfigEntry<bool> DampenItemRoll;
+        internal static ConfigEntry<bool> AlignPlacedItemToSurface;
+        internal static ConfigEntry<bool> KeepLookTextAboveSmoke;
+        internal static ConfigEntry<float> HammerNailSeconds;
+        internal static ConfigEntry<bool> KeepMerchantSellScroll;
 
         internal static void Bind(ConfigFile config)
         {
@@ -90,7 +94,7 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "RightClickBoatMooringCastOff",
                 true,
-                "Right-click the boat end of a tied mooring line to cast off. Vanilla right-click picks up the coil (same as left-click) to pay the line in or out; left-click still does that.");
+                "Right-click the boat end of a tied mooring line to cast off. Plays the same pickup sound as unmooring the dock knot. Vanilla right-click picks up the coil (same as left-click) to pay the line in or out; left-click still does that.");
 
             HideInventoryOnNeedsWarning = config.Bind(
                 "Fixes",
@@ -102,7 +106,7 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "PourSoupIntoMug",
                 true,
-                "Pour soup from a pot into a mug or cup, then drink it. Vanilla only pours water into the pot and drinks from the pot itself; clicking an empty mug places it instead.");
+                "Pour soup from a pot into a mug or cup, then drink it. Leftover fractional soup (vanilla mugs only spill at 1, 2, or 3 units) can still be drunk, dumped, or poured back. Vanilla only pours water into the pot and drinks from the pot itself; clicking an empty mug places it instead.");
 
             KeepChipLogDeployed = config.Bind(
                 "Fixes",
@@ -138,7 +142,33 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "DampenItemRoll",
                 true,
-                "Dropped bottles, mugs, fruit, and other capsule items stop rolling on a desk or deck instead of traveling a long way. Vanilla only settles mesh-collider items to kinematic when they sleep; capsules keep a very low angularDrag.");
+                "Dropped bottles, mugs, fruit, and other capsule items stop rolling on a desk or deck instead of traveling a long way, and stay settled after sleep or origin-shift. Vanilla only settles mesh-collider items to kinematic when they sleep; capsules keep a very low angularDrag and the next physics tick wakes them.");
+
+            AlignPlacedItemToSurface = config.Bind(
+                "Fixes",
+                "AlignPlacedItemToSurface",
+                true,
+                "Sit a pipe or quadrant flush on the looked-at surface instead of tilting with the camera and lifting along world up. Other items keep vanilla placement. Quadrants lie flat. While placing a pipe, scroll turns it on the table and Q flips it over. The preview follows the table while the boat moves. Vanilla copies the pointer rotation and offsets with Vector3.up, so a walk mesh that is not world-aligned leaves the item at an angle.");
+
+            KeepLookTextAboveSmoke = config.Bind(
+                "Fixes",
+                "KeepLookTextAboveSmoke",
+                true,
+                "Keep look and hold item text in front of pipe smoke. Vanilla world-space TextMesh shares the transparent queue with particles, and exhale smoke sits closer to the camera so it covers the label.");
+
+            HammerNailSeconds = config.Bind(
+                "Fixes",
+                "HammerNailSeconds",
+                1f,
+                new ConfigDescription(
+                    "How long (seconds) to hold right-click to nail an item. Vanilla is 2. Lower is faster. Unlock is still instant.",
+                    new AcceptableValueRange<float>(0.05f, 10f)));
+
+            KeepMerchantSellScroll = config.Bind(
+                "Fixes",
+                "KeepMerchantSellScroll",
+                true,
+                "Keep the merchant sell parchment open while you hold the item nearby, and move it to the closer merchant when you walk between stalls. Vanilla closes it when the held item leaves the shopkeeper trigger, and will not open a second merchant while the first parchment is still up.");
         }
     }
 }

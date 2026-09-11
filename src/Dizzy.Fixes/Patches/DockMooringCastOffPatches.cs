@@ -37,6 +37,11 @@ namespace Dizzy.Fixes
                 return false;
             }
 
+            // Vanilla unmoor is PickUpItem on the dock knot, which plays
+            // itemPickup. This path never picks the rope up, so play it here.
+            if (UISoundPlayer.instance != null)
+                UISoundPlayer.instance.PlayUISound(UISounds.itemPickup, 0.45f, 1.5f);
+
             return true;
         }
     }

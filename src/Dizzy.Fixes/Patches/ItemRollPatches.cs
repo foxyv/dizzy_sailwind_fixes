@@ -6,8 +6,10 @@ namespace Dizzy.Fixes
     // Item physics live on the ItemRigidbody twin. Vanilla angularDrag is
     // mass * 0.1 (often ~0.05-0.1) and only promotes a sleeping body to
     // kinematic when a mesh collider exists. Capsule bottles/mugs/fruit
-    // keep rolling on a desk or deck. Do not freeze X/Z (drink tilt, hooks)
-    // and do not add colliders on the visual ShipItem.
+    // keep rolling on a desk or deck. Mesh items stay settled because
+    // IsSleeping is true while kinematic; capsules skip that branch and
+    // wake on the next tick. Do not freeze X/Z (drink tilt, hooks) and
+    // do not add colliders on the visual ShipItem.
     internal static class ItemRoll
     {
         private const float AngularDragFloor = 3f;
@@ -36,11 +38,10 @@ namespace Dizzy.Fixes
             bool attached,
             bool inStove,
             Transform currentBox,
-            Transform currentInventorySlot)
+            Transform currentInventorySlot,
+            bool wasKinematic)
         {
             if (!Enabled() || body == null || item == null)
-                return;
-            if (body.isKinematic)
                 return;
             if (meshCol != null || capsuleCol == null)
                 return;
@@ -50,7 +51,10 @@ namespace Dizzy.Fixes
                 return;
             if (currentBox != null || currentInventorySlot != null)
                 return;
-            if (!body.IsSleeping())
+            // Mesh items stay kinematic because vanilla's sleep check is true
+            // while kinematic. Capsules skip that branch, so the next
+            // FixedUpdate wakes them and a wave or origin-shift starts a roll.
+            if (!wasKinematic && !body.IsSleeping())
                 return;
 
             body.isKinematic = true;
@@ -95,6 +99,11 @@ namespace Dizzy.Fixes
     [HarmonyPatch(typeof(ItemRigidbody), "FixedUpdate")]
     internal static class ItemRollSettlePatch
     {
+        private static void Prefix(Rigidbody ___rigidbody, ref bool __state)
+        {
+            __state = ___rigidbody != null && ___rigidbody.isKinematic;
+        }
+
         private static void Postfix(
             Rigidbody ___rigidbody,
             ShipItem ___item,
@@ -104,7 +113,8 @@ namespace Dizzy.Fixes
             bool ___attached,
             bool ___inStove,
             Transform ___currentBox,
-            Transform ___currentInventorySlot)
+            Transform ___currentInventorySlot,
+            bool __state)
         {
             if (!ItemRoll.Enabled())
                 return;
@@ -128,7 +138,8 @@ namespace Dizzy.Fixes
                 ___attached,
                 ___inStove,
                 ___currentBox,
-                ___currentInventorySlot);
+                ___currentInventorySlot,
+                __state);
         }
 
         private static bool _logged;
