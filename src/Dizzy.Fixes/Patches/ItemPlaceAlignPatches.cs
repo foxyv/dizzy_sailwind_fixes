@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
 
@@ -22,8 +21,6 @@ namespace Dizzy.Fixes
         private const float MinFwdSqr = 0.0001f;
         internal const int IgnoreRaycastLayer = 2;
 
-        private static readonly Dictionary<int, int[]> SavedLayers = new Dictionary<int, int[]>();
-
         private static Transform _surface;
         private static Vector3 _localPoint;
         private static Vector3 _localNormal;
@@ -33,6 +30,8 @@ namespace Dizzy.Fixes
         private static int _pipePlaceId;
         private static float _pipeYaw;
         private static bool _pipeFlipped;
+        private static int _quadrantPlaceId;
+        private static bool _quadrantOnEdge;
 
         internal static bool Enabled()
         {
@@ -64,36 +63,14 @@ namespace Dizzy.Fixes
             _hasSurface = true;
         }
 
-        internal static void SaveLayers(PickupableItem item)
+        // Vanilla DropItem only sets the root to layer 0. We put every
+        // child on ignore-raycast while held, so restore all of them to
+        // the world layer. Replaying the layers from pickup would put an
+        // inventory withdraw back on 5/16 (UI / hidden) and the mesh
+        // vanishes.
+        internal static void RestoreWorldLayers(PickupableItem item)
         {
-            if (item == null)
-                return;
-
-            Transform[] transforms = item.GetComponentsInChildren<Transform>(true);
-            int[] layers = new int[transforms.Length];
-            for (int i = 0; i < transforms.Length; i++)
-                layers[i] = transforms[i] != null ? transforms[i].gameObject.layer : 0;
-            SavedLayers[item.GetInstanceID()] = layers;
-        }
-
-        internal static void RestoreLayers(PickupableItem item)
-        {
-            if (item == null)
-                return;
-
-            int id = item.GetInstanceID();
-            int[] layers;
-            if (!SavedLayers.TryGetValue(id, out layers))
-                return;
-
-            SavedLayers.Remove(id);
-            Transform[] transforms = item.GetComponentsInChildren<Transform>(true);
-            int n = transforms.Length < layers.Length ? transforms.Length : layers.Length;
-            for (int i = 0; i < n; i++)
-            {
-                if (transforms[i] != null)
-                    transforms[i].gameObject.layer = layers[i];
-            }
+            SetHeldLayers(item, 0);
         }
 
         internal static void SetHeldLayers(PickupableItem item, int layer)
@@ -161,7 +138,17 @@ namespace Dizzy.Fixes
                 Vector3 fwd = Vector3.Cross(up, tangent);
                 if (fwd.sqrMagnitude < MinFwdSqr)
                     return;
-                heldItem.transform.rotation = Quaternion.LookRotation(fwd.normalized, tangent);
+                fwd.Normalize();
+
+                EnsureQuadrantPlace(heldItem);
+                NeutralizeInspect(heldItem as ShipItemQuadrant);
+
+                // 0.2.40 sit pose. Vanilla inspect was -90° Y; right-click
+                // edge uses the opposite +90° Y and keeps it on drop.
+                Quaternion rot = Quaternion.LookRotation(fwd, tangent);
+                if (_quadrantOnEdge)
+                    rot *= Quaternion.Euler(0f, 90f, 0f);
+                heldItem.transform.rotation = rot;
             }
             else
             {
@@ -213,6 +200,45 @@ namespace Dizzy.Fixes
             _pipeFlipped = false;
         }
 
+        internal static void ResetQuadrantPlace(PickupableItem item)
+        {
+            _quadrantPlaceId = item != null ? item.GetInstanceID() : 0;
+            _quadrantOnEdge = false;
+        }
+
+        internal static bool ToggleQuadrantEdge(ShipItemQuadrant quadrant)
+        {
+            if (quadrant == null || !IsPlacing(quadrant))
+                return false;
+
+            EnsureQuadrantPlace(quadrant);
+            NeutralizeInspect(quadrant);
+            _quadrantOnEdge = !_quadrantOnEdge;
+            return true;
+        }
+
+        internal static void NeutralizeInspect(ShipItemQuadrant quadrant)
+        {
+            if (quadrant == null)
+                return;
+
+            Traverse t = Traverse.Create(quadrant);
+            Traverse inspecting = t.Field("inspecting");
+            Traverse rotating = t.Field("rotating");
+            Traverse parent = t.Field("rotatingParent");
+            Traverse initial = t.Field("initialRot");
+            if (!inspecting.FieldExists() || !parent.FieldExists() || !initial.FieldExists())
+                return;
+
+            inspecting.SetValue(false);
+            if (rotating.FieldExists())
+                rotating.SetValue(false);
+
+            Transform rotatingParent = parent.GetValue<Transform>();
+            if (rotatingParent != null)
+                rotatingParent.localRotation = initial.GetValue<Quaternion>();
+        }
+
         internal static void AddPipeYaw(PickupableItem item, float input)
         {
             if (item == null)
@@ -240,6 +266,15 @@ namespace Dizzy.Fixes
             _pipePlaceId = id;
             _pipeYaw = 0f;
             _pipeFlipped = false;
+        }
+
+        private static void EnsureQuadrantPlace(PickupableItem item)
+        {
+            int id = item.GetInstanceID();
+            if (id == _quadrantPlaceId)
+                return;
+            _quadrantPlaceId = id;
+            _quadrantOnEdge = false;
         }
 
         internal static void ApplyFromPointer(GoPointer pointer)
@@ -311,13 +346,6 @@ namespace Dizzy.Fixes
     [HarmonyPatch(typeof(GoPointer), nameof(GoPointer.PickUpItem))]
     internal static class ItemPlaceAlignPickupLayerPatch
     {
-        private static void Prefix(PickupableItem item)
-        {
-            if (!ItemPlaceAlign.Enabled() || !ItemPlaceAlign.UsesSurfaceAlign(item))
-                return;
-            ItemPlaceAlign.SaveLayers(item);
-        }
-
         private static void Postfix(PickupableItem item)
         {
             if (!ItemPlaceAlign.Enabled() || !ItemPlaceAlign.UsesSurfaceAlign(item))
@@ -325,6 +353,8 @@ namespace Dizzy.Fixes
             ItemPlaceAlign.SetHeldLayers(item, ItemPlaceAlign.IgnoreRaycastLayer);
             if (item is ShipItemPipe)
                 ItemPlaceAlign.ResetPipePlace(item);
+            if (item is ShipItemQuadrant)
+                ItemPlaceAlign.ResetQuadrantPlace(item);
         }
     }
 
@@ -335,7 +365,7 @@ namespace Dizzy.Fixes
         {
             if (!ItemPlaceAlign.Enabled() || !ItemPlaceAlign.UsesSurfaceAlign(___heldItem))
                 return;
-            ItemPlaceAlign.RestoreLayers(___heldItem);
+            ItemPlaceAlign.RestoreWorldLayers(___heldItem);
         }
     }
 
@@ -351,6 +381,28 @@ namespace Dizzy.Fixes
 
             ItemPlaceAlign.AddPipeYaw(__instance, input);
             return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(ShipItemQuadrant), nameof(ShipItemQuadrant.OnAltActivate))]
+    internal static class ItemPlaceAlignQuadrantEdgePatch
+    {
+        private static bool Prefix(ShipItemQuadrant __instance)
+        {
+            if (!ItemPlaceAlign.Enabled())
+                return true;
+            return !ItemPlaceAlign.ToggleQuadrantEdge(__instance);
+        }
+    }
+
+    [HarmonyPatch(typeof(ShipItemQuadrant), nameof(ShipItemQuadrant.OnDrop))]
+    internal static class ItemPlaceAlignQuadrantDropInspectPatch
+    {
+        private static void Prefix(ShipItemQuadrant __instance)
+        {
+            if (!ItemPlaceAlign.Enabled() || __instance == null)
+                return;
+            ItemPlaceAlign.NeutralizeInspect(__instance);
         }
     }
 }

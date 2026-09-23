@@ -28,6 +28,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<float> HammerNailSeconds;
         internal static ConfigEntry<bool> KeepMerchantSellScroll;
         internal static ConfigEntry<bool> PreferSittingItemLook;
+        internal static ConfigEntry<bool> SkipSmoothOriginShift;
 
         internal static void Bind(ConfigFile config)
         {
@@ -149,7 +150,7 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "AlignPlacedItemToSurface",
                 true,
-                "Sit a pipe or quadrant flush on the looked-at surface instead of tilting with the camera and lifting along world up. Other items keep vanilla placement. Quadrants lie flat. While placing a pipe, scroll turns it on the table and Q flips it over. The preview follows the table while the boat moves. Vanilla copies the pointer rotation and offsets with Vector3.up, so a walk mesh that is not world-aligned leaves the item at an angle.");
+                "Sit a pipe or quadrant flush on the looked-at surface instead of tilting with the camera and lifting along world up. Other items keep vanilla placement. Quadrants rest on the sighting beam; right-click while placing stands them on edge and that pose stays when dropped. While placing a pipe, scroll turns it on the table and Q flips it over. The preview follows the table while the boat moves. Vanilla copies the pointer rotation and offsets with Vector3.up, so a walk mesh that is not world-aligned leaves the item at an angle.");
 
             KeepLookTextAboveSmoke = config.Bind(
                 "Fixes",
@@ -176,6 +177,12 @@ namespace Dizzy.Fixes
                 "PreferSittingItemLook",
                 true,
                 "Click a mug, pipe, or other small item sitting on a desk, crate, or deck even when the look ray hits that surface first. Vanilla keeps the first collider, so a settled or flush-placed item is often only selectable from the exposed side.");
+
+            SkipSmoothOriginShift = config.Bind(
+                "Fixes",
+                "SkipSmoothOriginShift",
+                true,
+                "Do not stall ~2 seconds (wake fade + waitingForShift) before a floating-origin teleport. Vanilla ShiftSmoothly waits 100 physics ticks then moves the world 512 m, which feels like freeze-then-jerk. The shift still happens in one frame and still prepares/restores boat momentum.");
         }
     }
 }
