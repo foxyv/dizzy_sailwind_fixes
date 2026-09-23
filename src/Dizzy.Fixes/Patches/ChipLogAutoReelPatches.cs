@@ -12,8 +12,18 @@ namespace Dizzy.Fixes
     // line out instead. InstantUnthrow (right-click) still sets
     // currentTargetLength to minLength directly.
     //
-    // Wait until the throw animation finishes (or the chip is in the
-    // water) so the toss can still reel in the air.
+    // Only after the bobber has been in the water. A freshly bought
+    // log can report airborne the whole throw (bobber still at the
+    // stall, or the floater not sampling yet) and would otherwise pay
+    // the line out to the stop with no speed reading. The toss can
+    // still reel in the air. Right-click still sets min length.
+    //
+    // OnLoad parents the bobber to the shifting world and leaves it
+    // at the stall. OnBuy does not move it, and Sell picks the reel
+    // up before the held pose is applied, so a one-shot snap on buy
+    // freezes the chip at the stall. Until the log is thrown, snap
+    // the bobber onto the reel each ExtraLateUpdate so it follows
+    // the item into the hand. ThrowRod then releases it.
     internal static class ChipLogDeployed
     {
         private static readonly Dictionary<int, bool> Deployed = new Dictionary<int, bool>();
@@ -27,7 +37,6 @@ namespace Dizzy.Fixes
         internal static void NoteDeployed(
             ShipItemChipLog log,
             bool thrown,
-            bool throwing,
             SimpleFloatingObject floater)
         {
             if (!Enabled() || log == null)
@@ -40,8 +49,7 @@ namespace Dizzy.Fixes
                 return;
             }
 
-            bool inWater = floater != null && floater.InWater;
-            if (!throwing || inWater)
+            if (floater != null && floater.InWater)
                 Deployed[id] = true;
         }
 
@@ -51,6 +59,33 @@ namespace Dizzy.Fixes
                 return false;
             bool deployed;
             return Deployed.TryGetValue(log.GetInstanceID(), out deployed) && deployed;
+        }
+
+        internal static void HoldOnReel(
+            ShipItemChipLog log,
+            bool thrown,
+            bool throwing,
+            ConfigurableJoint bobberJoint,
+            ref Rigidbody bobberBody,
+            Vector3 initialBobberPos,
+            ref float currentTargetLength,
+            float minLength)
+        {
+            if (!Enabled() || log == null || !log.sold || thrown || throwing || bobberJoint == null)
+                return;
+
+            if (bobberBody == null)
+                bobberBody = bobberJoint.GetComponent<Rigidbody>();
+            if (bobberBody == null)
+                return;
+
+            if (initialBobberPos == Vector3.zero)
+                initialBobberPos = bobberJoint.connectedAnchor;
+
+            bobberBody.isKinematic = true;
+            bobberJoint.transform.position = log.transform.TransformPoint(initialBobberPos);
+            bobberJoint.transform.rotation = log.transform.rotation;
+            currentTargetLength = minLength;
         }
 
         internal static void Forget(ShipItemChipLog log)
@@ -83,10 +118,9 @@ namespace Dizzy.Fixes
         private static void Prefix(
             ShipItemChipLog __instance,
             bool ___thrown,
-            bool ___throwing,
             SimpleFloatingObject ___bobberFloater)
         {
-            ChipLogDeployed.NoteDeployed(__instance, ___thrown, ___throwing, ___bobberFloater);
+            ChipLogDeployed.NoteDeployed(__instance, ___thrown, ___bobberFloater);
         }
 
         private static void Postfix(
@@ -102,6 +136,31 @@ namespace Dizzy.Fixes
                 ___bobberBody,
                 ___autoReturnSpeed,
                 ref ___currentTargetLength);
+        }
+    }
+
+    [HarmonyPatch(typeof(ShipItemChipLog), "ExtraLateUpdate")]
+    internal static class ChipLogHoldOnReelPatch
+    {
+        private static void Postfix(
+            ShipItemChipLog __instance,
+            bool ___thrown,
+            bool ___throwing,
+            ConfigurableJoint ___bobberJoint,
+            ref Rigidbody ___bobberBody,
+            Vector3 ___initialBobberPos,
+            ref float ___currentTargetLength,
+            float ___minLength)
+        {
+            ChipLogDeployed.HoldOnReel(
+                __instance,
+                ___thrown,
+                ___throwing,
+                ___bobberJoint,
+                ref ___bobberBody,
+                ___initialBobberPos,
+                ref ___currentTargetLength,
+                ___minLength);
         }
     }
 

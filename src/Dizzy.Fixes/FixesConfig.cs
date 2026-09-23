@@ -114,7 +114,7 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "KeepChipLogDeployed",
                 true,
-                "When waves lift the chip log after it has been thrown, pay the line out instead of winding it in. Vanilla auto-returns whenever the bobber is airborne, including chop. The toss animation can still reel in the air. Right-click still reels it in.");
+                "When waves lift the chip log after it has been thrown and the bobber has already been in the water, pay the line out instead of winding it in. Vanilla auto-returns whenever the bobber is airborne, including chop. Until you throw a newly bought log, the bobber stays on the reel (vanilla leaves it at the stall, so the line runs out and the speed pointer stays at zero until you reload). The toss can still reel in the air. Right-click still reels it in.");
 
             PreventBoatCacheSpawnLoop = config.Bind(
                 "Fixes",
