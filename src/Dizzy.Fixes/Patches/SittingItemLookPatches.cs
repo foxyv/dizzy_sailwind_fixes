@@ -124,7 +124,7 @@ namespace Dizzy.Fixes
         {
             if (item == null || item == held || item.unclickable || item.held != null)
                 return false;
-            if (HeldFoodLook.Enabled() && held is ShipItemFood && item is ShipItemFood)
+            if (HeldFoodLook.Enabled() && HeldFoodLook.HoldingFood(held) && item is ShipItemFood)
                 return false;
 
             ShipItem shipItem = item as ShipItem;

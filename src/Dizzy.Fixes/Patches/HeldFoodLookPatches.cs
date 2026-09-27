@@ -19,12 +19,20 @@ namespace Dizzy.Fixes
                 && FixesConfig.SkipOtherFoodWhileHolding.Value;
         }
 
+        // A destroyed hold still passes `is ShipItemFood`. Unity's == is
+        // what treats it as empty. Eating an apple leaves that corpse in
+        // the pointer until another item replaces it.
+        internal static bool HoldingFood(PickupableItem held)
+        {
+            return held != null && held is ShipItemFood;
+        }
+
         internal static GoPointerButton SurfaceBehindFood(
             PickupableItem held,
             bool debugEditorPointer,
             Ray raycastRay)
         {
-            if (!(held is ShipItemFood))
+            if (!HoldingFood(held))
                 return null;
 
             Ray ray = SittingItemLook.MakeRay(debugEditorPointer, raycastRay);
@@ -84,7 +92,7 @@ namespace Dizzy.Fixes
             ref GoPointerButton ___pointedAtButton,
             ref float ___currentLookDistance)
         {
-            if (!HeldFoodLook.Enabled() || !(___heldItem is ShipItemFood))
+            if (!HeldFoodLook.Enabled() || !HeldFoodLook.HoldingFood(___heldItem))
                 return;
             if (___pointedAtButton != null && !(___pointedAtButton is ShipItemFood))
                 return;
@@ -111,6 +119,52 @@ namespace Dizzy.Fixes
             ___pointedAtButton = surface;
             surface.Look(__instance);
             ___currentLookDistance = Vector3.Distance(__instance.transform.position, surface.transform.position);
+        }
+    }
+
+    // Destroy() does not clear GoPointer.heldItem, and DropItem bails on a
+    // destroyed object, so the corpse stays until another pickup replaces
+    // it. The stall also keeps recentlyBoughtItem, which blocks the buy
+    // prompt on that same object. Releasing both is what picking an
+    // inventory item up and putting it back was doing by accident.
+    [HarmonyPatch(typeof(ShipItem), nameof(ShipItem.DestroyItem))]
+    internal static class ReleaseDestroyedHoldPatch
+    {
+        private static void Postfix(ShipItem __instance, bool __runOriginal)
+        {
+            if (!__runOriginal)
+                return;
+            if (FixesConfig.ReleaseDestroyedHeldItem == null || !FixesConfig.ReleaseDestroyedHeldItem.Value)
+                return;
+            if (__instance == null)
+                return;
+
+            GoPointer pointer = __instance.held;
+            if (pointer != null && pointer.GetHeldItem() == __instance)
+            {
+                Traverse.Create(pointer).Field("heldItem").SetValue(null);
+                __instance.held = null;
+            }
+
+            BuyItemUI ui = BuyItemUI.instance;
+            if (ui != null)
+            {
+                if (ui.activeItem == __instance)
+                    ui.DeactivateUI();
+                else if (ui.recentlyBoughtItem == __instance)
+                    ui.recentlyBoughtItem = null;
+            }
+
+            GPButtonInventorySlot[] slots = GPButtonInventorySlot.inventorySlots;
+            if (slots == null)
+                return;
+
+            for (int i = 0; i < slots.Length; i++)
+            {
+                GPButtonInventorySlot slot = slots[i];
+                if (slot != null && slot.currentItem == __instance)
+                    slot.currentItem = null;
+            }
         }
     }
 }

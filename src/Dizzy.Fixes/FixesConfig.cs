@@ -29,6 +29,8 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> KeepMerchantSellScroll;
         internal static ConfigEntry<bool> PreferSittingItemLook;
         internal static ConfigEntry<bool> SkipOtherFoodWhileHolding;
+        internal static ConfigEntry<bool> PreferCrateInventorySlot;
+        internal static ConfigEntry<bool> ReleaseDestroyedHeldItem;
         internal static ConfigEntry<bool> SkipSmoothOriginShift;
 
         internal static void Bind(ConfigFile config)
@@ -184,6 +186,18 @@ namespace Dizzy.Fixes
                 "SkipOtherFoodWhileHolding",
                 true,
                 "While holding food, the look ray skips other food on a shelf or drying rack so you can place what you're holding. Vanilla highlights those items, and the sitting-item look will grab a nearby apple, so the rack never stays targeted.");
+
+            PreferCrateInventorySlot = config.Bind(
+                "Fixes",
+                "PreferCrateInventorySlot",
+                true,
+                "While a container's inventory is open, the grid blocks the look ray. The slot under the crosshair wins, including the corners between slot centers, so a click cannot place through the panel onto whatever is behind it.");
+
+            ReleaseDestroyedHeldItem = config.Bind(
+                "Fixes",
+                "ReleaseDestroyedHeldItem",
+                true,
+                "Eating or otherwise destroying a held item lets go of it. Vanilla leaves the pointer and the stall's last-bought record on the destroyed object, so the look ray still treats you as holding food and the stall will not sell another apple until a different inventory item is picked up and put back.");
 
             SkipSmoothOriginShift = config.Bind(
                 "Fixes",
