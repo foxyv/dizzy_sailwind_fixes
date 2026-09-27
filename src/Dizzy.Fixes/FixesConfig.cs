@@ -28,6 +28,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<float> HammerNailSeconds;
         internal static ConfigEntry<bool> KeepMerchantSellScroll;
         internal static ConfigEntry<bool> PreferSittingItemLook;
+        internal static ConfigEntry<bool> SkipOtherFoodWhileHolding;
         internal static ConfigEntry<bool> SkipSmoothOriginShift;
 
         internal static void Bind(ConfigFile config)
@@ -177,6 +178,12 @@ namespace Dizzy.Fixes
                 "PreferSittingItemLook",
                 true,
                 "Click a mug, pipe, or other small item sitting on a desk, crate, or deck even when the look ray hits that surface first. Vanilla keeps the first collider, so a settled or flush-placed item is often only selectable from the exposed side.");
+
+            SkipOtherFoodWhileHolding = config.Bind(
+                "Fixes",
+                "SkipOtherFoodWhileHolding",
+                true,
+                "While holding food, the look ray skips other food on a shelf or drying rack so you can place what you're holding. Vanilla highlights those items, and the sitting-item look will grab a nearby apple, so the rack never stays targeted.");
 
             SkipSmoothOriginShift = config.Bind(
                 "Fixes",

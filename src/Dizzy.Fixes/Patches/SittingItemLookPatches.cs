@@ -136,6 +136,8 @@ namespace Dizzy.Fixes
                 return;
             if (item.held != null)
                 return;
+            if (HeldFoodLook.Enabled() && held is ShipItemFood && item is ShipItemFood)
+                return;
 
             ShipItem shipItem = item as ShipItem;
             if (shipItem != null)

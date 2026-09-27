@@ -48,6 +48,7 @@ Skip deploy: `-p:DeployOnBuild=false`
 | `HammerNailSeconds` | 1 | How long (seconds) to hold right-click to nail an item. Vanilla is 2. Lower is faster. Unlock is still instant. |
 | `KeepMerchantSellScroll` | on | The merchant sell parchment stays open while you hold the item nearby, and follows the closer merchant when you walk between stalls. Vanilla closes it when the held item leaves the shopkeeper trigger, and will not open a second merchant while the first parchment is still up. |
 | `PreferSittingItemLook` | on | A mug, pipe, or other small item sitting on a desk, crate, or deck stays selectable when the look ray hits that surface first. Vanilla keeps the first collider, so a settled or flush-placed item is often only clickable from one side. |
+| `SkipOtherFoodWhileHolding` | on | While holding food, the look ray skips other food on a shelf or drying rack so you can place what you're holding. Vanilla highlights those items, and clicking them picks up another apple instead of the rack. |
 | `SkipSmoothOriginShift` | on | Crossing the 512 m floating-origin boundary no longer stalls ~2 seconds (wake fade / `waitingForShift`) before the world teleports. Vanilla `ShiftSmoothly` waits 100 physics ticks then moves 512 m, which feels like freeze-then-jerk. The teleport still happens in one frame. |
 
 Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.
