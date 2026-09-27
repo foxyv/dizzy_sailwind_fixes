@@ -177,7 +177,7 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "PreferSittingItemLook",
                 true,
-                "Click a mug, pipe, or other small item sitting on a desk, crate, or deck even when the look ray hits that surface first. Vanilla keeps the first collider, so a settled or flush-placed item is often only selectable from the exposed side.");
+                "Click a mug, pipe, or other small item sitting on a desk, crate, or deck even when the look ray hits that surface first. Vanilla keeps the first collider, so a settled or flush-placed item is often only selectable from the exposed side. A direct hit stays on that item. When several items are close, the one under the crosshair wins over a nearer neighbor.");
 
             SkipOtherFoodWhileHolding = config.Bind(
                 "Fixes",

@@ -7,6 +7,8 @@ namespace Dizzy.Fixes
     // a desk, crate, or walk mesh is often behind that first hit (kinematic
     // settle, flush place-align, one-sided mesh), so it is only clickable
     // from the exposed side. Prefer a nearby pickupable along the ray.
+    // A direct hit on an item stays on that item. Among neighbors, the one
+    // under the crosshair wins over a nearer apple off to the side.
     internal static class SittingItemLook
     {
         internal const float MaxDistance = 1.8f;
@@ -52,25 +54,29 @@ namespace Dizzy.Fixes
             if (ShouldKeep(vanilla))
                 return null;
 
-            Ray ray = MakeRay(debugEditorPointer, raycastRay);
-            PickupableItem best = null;
-            float bestDistance = float.MaxValue;
-
-            ConsiderRay(ray, held, ref best, ref bestDistance);
-            if (hit.collider != null)
-                ConsiderOverlap(hit.point, ray, held, ref best, ref bestDistance);
-
-            if (best == null)
-                return null;
-
             PickupableItem vanillaItem = vanilla != null
                 ? vanilla.GetComponent<PickupableItem>()
                 : null;
-            if (best == vanillaItem)
+            if (vanillaItem != null
+                && !(vanillaItem is ShipItemCrate)
+                && IsSelectable(vanillaItem, held))
+                return null;
+
+            Ray ray = MakeRay(debugEditorPointer, raycastRay);
+            PickupableItem best = null;
+            float bestDistance = float.MaxValue;
+            float bestLateral = float.MaxValue;
+
+            ConsiderRay(ray, held, ref best, ref bestDistance, ref bestLateral);
+            if (hit.collider != null)
+                ConsiderOverlap(hit.point, ray, held, ref best, ref bestDistance, ref bestLateral);
+
+            if (best == null || best == vanillaItem)
                 return null;
 
             float surface = hit.collider != null ? hit.distance : MaxDistance;
-            if (bestDistance > surface + Slack)
+            float allowance = bestLateral <= 0.05f ? MaxDistance : Slack;
+            if (bestDistance > surface + allowance)
                 return null;
 
             return best;
@@ -80,11 +86,12 @@ namespace Dizzy.Fixes
             Ray ray,
             PickupableItem held,
             ref PickupableItem best,
-            ref float bestDistance)
+            ref float bestDistance,
+            ref float bestLateral)
         {
             int count = Physics.RaycastNonAlloc(ray, Hits, MaxDistance, LayerMask);
             for (int i = 0; i < count; i++)
-                ConsiderCollider(Hits[i].collider, Hits[i].distance, ray, held, ref best, ref bestDistance);
+                ConsiderCollider(Hits[i].collider, Hits[i].distance, ray, held, ref best, ref bestDistance, ref bestLateral);
         }
 
         private static void ConsiderOverlap(
@@ -92,7 +99,8 @@ namespace Dizzy.Fixes
             Ray ray,
             PickupableItem held,
             ref PickupableItem best,
-            ref float bestDistance)
+            ref float bestDistance,
+            ref float bestLateral)
         {
             int count = Physics.OverlapSphereNonAlloc(
                 point,
@@ -108,8 +116,28 @@ namespace Dizzy.Fixes
                 float distance = Vector3.Dot(collider.bounds.center - ray.origin, ray.direction);
                 if (distance < 0f || distance > MaxDistance)
                     continue;
-                ConsiderCollider(collider, distance, ray, held, ref best, ref bestDistance);
+                ConsiderCollider(collider, distance, ray, held, ref best, ref bestDistance, ref bestLateral);
             }
+        }
+
+        private static bool IsSelectable(PickupableItem item, PickupableItem held)
+        {
+            if (item == null || item == held || item.unclickable || item.held != null)
+                return false;
+            if (HeldFoodLook.Enabled() && held is ShipItemFood && item is ShipItemFood)
+                return false;
+
+            ShipItem shipItem = item as ShipItem;
+            if (shipItem == null)
+                return true;
+            if (!shipItem.sold)
+                return false;
+            if (shipItem.nailed
+                && !(shipItem is ShipItemCrate)
+                && !(shipItem is ShipItemBottle)
+                && !(shipItem is ShipItemBed))
+                return false;
+            return true;
         }
 
         private static void ConsiderCollider(
@@ -118,7 +146,8 @@ namespace Dizzy.Fixes
             Ray ray,
             PickupableItem held,
             ref PickupableItem best,
-            ref float bestDistance)
+            ref float bestDistance,
+            ref float bestLateral)
         {
             if (collider == null)
                 return;
@@ -130,28 +159,7 @@ namespace Dizzy.Fixes
             PickupableItem item = collider.GetComponent<PickupableItem>();
             if (item == null)
                 item = collider.GetComponentInParent<PickupableItem>();
-            if (item == null || item == held)
-                return;
-            if (item.unclickable)
-                return;
-            if (item.held != null)
-                return;
-            if (HeldFoodLook.Enabled() && held is ShipItemFood && item is ShipItemFood)
-                return;
-
-            ShipItem shipItem = item as ShipItem;
-            if (shipItem != null)
-            {
-                if (!shipItem.sold)
-                    return;
-                if (shipItem.nailed
-                    && !(shipItem is ShipItemCrate)
-                    && !(shipItem is ShipItemBottle)
-                    && !(shipItem is ShipItemBed))
-                    return;
-            }
-
-            if (distance >= bestDistance)
+            if (!IsSelectable(item, held))
                 return;
 
             Vector3 closest = collider.ClosestPoint(ray.origin + ray.direction * Mathf.Max(distance, 0f));
@@ -163,6 +171,13 @@ namespace Dizzy.Fixes
             if (lateral > OverlapRadius)
                 return;
 
+            const float aimEpsilon = 0.01f;
+            bool closerAim = lateral + aimEpsilon < bestLateral;
+            bool sameAimCloser = lateral <= bestLateral + aimEpsilon && distance < bestDistance;
+            if (!closerAim && !sameAimCloser)
+                return;
+
+            bestLateral = lateral;
             bestDistance = distance;
             best = item;
         }
