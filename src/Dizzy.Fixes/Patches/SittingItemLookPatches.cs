@@ -53,6 +53,8 @@ namespace Dizzy.Fixes
         {
             if (ShouldKeep(vanilla))
                 return null;
+            if (BigCrateCarry.Enabled() && BigCrateCarry.IsDropOnlyCarry(held))
+                return null;
 
             PickupableItem vanillaItem = vanilla != null
                 ? vanilla.GetComponent<PickupableItem>()

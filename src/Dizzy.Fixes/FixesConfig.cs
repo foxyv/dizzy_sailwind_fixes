@@ -32,6 +32,9 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> PreferCrateInventorySlot;
         internal static ConfigEntry<bool> ReleaseDestroyedHeldItem;
         internal static ConfigEntry<bool> SkipSmoothOriginShift;
+        internal static ConfigEntry<bool> KeepCrateContentsWithBoat;
+        internal static ConfigEntry<bool> DropBigCratePastOtherCrates;
+        internal static ConfigEntry<bool> DelayBoatCacheSpawn;
 
         internal static void Bind(ConfigFile config)
         {
@@ -204,6 +207,24 @@ namespace Dizzy.Fixes
                 "SkipSmoothOriginShift",
                 true,
                 "Do not stall ~2 seconds (wake fade + waitingForShift) before a floating-origin teleport. Vanilla ShiftSmoothly waits 100 physics ticks then moves the world 512 m, which feels like freeze-then-jerk. The shift still happens in one frame and still prepares/restores boat momentum.");
+
+            KeepCrateContentsWithBoat = config.Bind(
+                "Fixes",
+                "KeepCrateContentsWithBoat",
+                true,
+                "Keep crate contents on the same boat as the crate. Unsealing a firewood or hook box never gives those pieces a boat save parent, so a reload away from that boat spawns them in the world, they look for the crate once, and they fall out. Opening a crate with more pieces than squares no longer throws and drops the rest.");
+
+            DropBigCratePastOtherCrates = config.Bind(
+                "Fixes",
+                "DropBigCratePastOtherCrates",
+                true,
+                "While carrying a two-handed item, the look ray ignores other objects so left-click can drop it. Vanilla highlights the next object, and a highlighted object blocks the drop.");
+
+            DelayBoatCacheSpawn = config.Bind(
+                "Debug",
+                "DelayBoatCacheSpawn",
+                false,
+                "Debug only. After each load, spawn a boat's loose items first and hold its crates for several frames. Crate contents look for the crate once and miss it, so they fall out. Leave this off while playing.");
         }
     }
 }

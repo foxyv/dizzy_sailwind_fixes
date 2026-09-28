@@ -52,6 +52,9 @@ Skip deploy: `-p:DeployOnBuild=false`
 | `PreferCrateInventorySlot` | on | While a container's inventory is open, the grid blocks the look ray. The slot under the crosshair wins, including the corners between slot centers, so a click cannot place through the panel onto whatever is behind it. |
 | `ReleaseDestroyedHeldItem` | on | Eating or otherwise destroying a held item lets go of it. Vanilla leaves the pointer and the stall's last-bought record on the destroyed object, so the look ray still treats you as holding food and the stall will not sell another apple until a different inventory item is picked up and put back. |
 | `SkipSmoothOriginShift` | on | Crossing the 512 m floating-origin boundary no longer stalls ~2 seconds (wake fade / `waitingForShift`) before the world teleports. Vanilla `ShiftSmoothly` waits 100 physics ticks then moves 512 m, which feels like freeze-then-jerk. The teleport still happens in one frame. |
+| `KeepCrateContentsWithBoat` | on | Crate contents stay with the crate's boat. Unsealing a firewood or hook box used to save those pieces as loose world objects, so a reload away from that boat dropped them. An overfull crate still opens; extra pieces stay inside with no square until something is removed. |
+| `DropBigCratePastOtherCrates` | on | While carrying a two-handed item, the look ray ignores other objects so left-click can drop it. Vanilla highlights the next object, and a highlighted object blocks the drop. |
+| `DelayBoatCacheSpawn` | off | Debug only. After each load, a boat's loose items appear first and its crates wait several frames. Crate contents then miss the crate and fall out. Leave this off while playing. |
 
 Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.
 
