@@ -8,7 +8,7 @@ namespace Dizzy.Fixes
     // object, but the ray still highlights the next one and that highlight
     // blocks the drop. A target the carried item can use stays highlighted,
     // so a held barrel can still be clicked on another barrel to refill,
-    // and the merchant sell button stays clickable.
+    // and the merchant sell button and boat ladders stay clickable.
     internal static class BigCrateCarry
     {
         internal static bool Enabled()
@@ -29,12 +29,12 @@ namespace Dizzy.Fixes
         // ShipItemBottle.AllowOnItemClick is true for another bottle, so
         // vanilla OnItemClick can pour. Equal barrels fill the held one.
         // The merchant parchment is GPButtonBuyItem; clearing it drops the
-        // crate instead of selling.
+        // crate instead of selling. BoatLadder is the hull rope ladder.
         internal static bool CanUse(PickupableItem held, GoPointerButton button)
         {
             if (button == null || button == held)
                 return false;
-            if (button is GPButtonBuyItem)
+            if (button is GPButtonBuyItem || button is BoatLadder)
                 return true;
             if (held == null)
                 return false;
@@ -50,6 +50,16 @@ namespace Dizzy.Fixes
 
             pointed.ForceUnlook();
             pointed = null;
+        }
+
+        // Climbing disables the ladder collider, so the pickup-button
+        // release no longer has a target and vanilla drops the carried item.
+        internal static void HoldLadderClick(PickupableItem held, GoPointerButton clicked, ref GoPointerButton pointed)
+        {
+            if (!Enabled() || held == null || !(clicked is BoatLadder))
+                return;
+
+            pointed = clicked;
         }
     }
 
@@ -111,9 +121,10 @@ namespace Dizzy.Fixes
         "Dizzy.Fixes.ItemPlaceAlignPreviewPatch")]
     internal static class DropBigCrateClickPatch
     {
-        private static void Prefix(PickupableItem ___heldItem, ref GoPointerButton ___pointedAtButton)
+        private static void Prefix(PickupableItem ___heldItem, GoPointerButton ___clickedButton, ref GoPointerButton ___pointedAtButton)
         {
             BigCrateCarry.ClearLook(___heldItem, ref ___pointedAtButton);
+            BigCrateCarry.HoldLadderClick(___heldItem, ___clickedButton, ref ___pointedAtButton);
         }
     }
 }
