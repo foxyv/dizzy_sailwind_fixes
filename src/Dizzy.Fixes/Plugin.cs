@@ -10,7 +10,7 @@ namespace Dizzy.Fixes
     {
         public const string PluginGuid = "com.dizzy.sailwind.fixes";
         public const string PluginName = "Dizzy Sailwind Fixes";
-        public const string PluginVersion = "0.2.74";
+        public const string PluginVersion = "0.2.76";
 
         internal static ManualLogSource Log;
         internal static Plugin Instance;

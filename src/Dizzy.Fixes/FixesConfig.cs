@@ -218,7 +218,7 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "DropBigCratePastOtherCrates",
                 true,
-                "While carrying a two-handed item, the look ray ignores other objects so left-click can drop it. Vanilla highlights the next object, and a highlighted object blocks the drop.");
+                "While carrying a two-handed item, the look ray ignores other objects so left-click can drop it, except an object that item can use and the merchant sell button. A held barrel can still be clicked on another barrel of the same liquid to refill. Vanilla highlights the next object, and a highlighted object blocks the drop.");
 
             DelayBoatCacheSpawn = config.Bind(
                 "Debug",

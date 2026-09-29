@@ -6,7 +6,9 @@ namespace Dizzy.Fixes
     // Dropping a carried item only runs when the look ray is on nothing.
     // Two-handed items (PickupableItem.big) cannot be placed onto another
     // object, but the ray still highlights the next one and that highlight
-    // blocks the drop.
+    // blocks the drop. A target the carried item can use stays highlighted,
+    // so a held barrel can still be clicked on another barrel to refill,
+    // and the merchant sell button stays clickable.
     internal static class BigCrateCarry
     {
         internal static bool Enabled()
@@ -17,15 +19,33 @@ namespace Dizzy.Fixes
 
         internal static bool Blocking;
 
+        internal static PickupableItem Held;
+
         internal static bool IsDropOnlyCarry(PickupableItem held)
         {
             return held != null && held.big;
         }
 
+        // ShipItemBottle.AllowOnItemClick is true for another bottle, so
+        // vanilla OnItemClick can pour. Equal barrels fill the held one.
+        // The merchant parchment is GPButtonBuyItem; clearing it drops the
+        // crate instead of selling.
+        internal static bool CanUse(PickupableItem held, GoPointerButton button)
+        {
+            if (button == null || button == held)
+                return false;
+            if (button is GPButtonBuyItem)
+                return true;
+            if (held == null)
+                return false;
+            return held.AllowOnItemClick(button);
+        }
+
         internal static void ClearLook(PickupableItem held, ref GoPointerButton pointed)
         {
+            Held = held;
             Blocking = Enabled() && IsDropOnlyCarry(held);
-            if (!Blocking || pointed == null || pointed == held)
+            if (!Blocking || pointed == null || pointed == held || CanUse(held, pointed))
                 return;
 
             pointed.ForceUnlook();
@@ -41,10 +61,13 @@ namespace Dizzy.Fixes
     {
         private static bool Prefix(GoPointerButton __instance, GoPointer lookingPointer)
         {
-            if (lookingPointer == null || !BigCrateCarry.Enabled() || !BigCrateCarry.IsDropOnlyCarry(lookingPointer.GetHeldItem()))
+            PickupableItem held = lookingPointer != null ? lookingPointer.GetHeldItem() : null;
+            if (lookingPointer == null || !BigCrateCarry.Enabled() || !BigCrateCarry.IsDropOnlyCarry(held))
+                return true;
+            if (__instance == held || BigCrateCarry.CanUse(held, __instance))
                 return true;
 
-            return __instance == lookingPointer.GetHeldItem();
+            return false;
         }
     }
 
@@ -58,6 +81,8 @@ namespace Dizzy.Fixes
 
             PickupableItem self = __instance as PickupableItem;
             if (self != null && self.held != null && BigCrateCarry.IsDropOnlyCarry(self))
+                return true;
+            if (BigCrateCarry.CanUse(BigCrateCarry.Held, __instance))
                 return true;
 
             if (__instance.IsLookedAt())
