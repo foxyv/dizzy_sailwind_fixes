@@ -61,6 +61,20 @@ namespace Dizzy.Fixes
 
             pointed = clicked;
         }
+
+        internal static void SuppressOutline(GoPointerButton button)
+        {
+            Component[] parts = button.GetComponentsInChildren<Component>(true);
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (parts[i] == null || parts[i].GetType().Name != "Outline")
+                    continue;
+
+                Behaviour outline = parts[i] as Behaviour;
+                if (outline != null && outline.enabled)
+                    outline.enabled = false;
+            }
+        }
     }
 
     // Look() is what arms the outline. Unlooking it again the same frame
@@ -98,14 +112,13 @@ namespace Dizzy.Fixes
             if (__instance.IsLookedAt())
                 __instance.ForceUnlook();
             __instance.forceDisableRedOutline = true;
-            OpenCrateHighlightPatch.SuppressOutline(__instance);
+            BigCrateCarry.SuppressOutline(__instance);
             return false;
         }
     }
 
     [HarmonyPatch(typeof(GoPointer), "DoRaycast")]
     [HarmonyPriority(Priority.Last)]
-    [HarmonyAfter("Dizzy.Fixes.PreferCrateInventorySlotPatch")]
     internal static class DropBigCrateRayPatch
     {
         private static void Postfix(PickupableItem ___heldItem, ref GoPointerButton ___pointedAtButton)
@@ -116,9 +129,7 @@ namespace Dizzy.Fixes
 
     [HarmonyPatch(typeof(GoPointer), "LateUpdate")]
     [HarmonyPriority(Priority.Last)]
-    [HarmonyAfter(
-        "Dizzy.Fixes.CrateSlotPreviewPatch",
-        "Dizzy.Fixes.ItemPlaceAlignPreviewPatch")]
+    [HarmonyAfter("Dizzy.Fixes.ItemPlaceAlignPreviewPatch")]
     internal static class DropBigCrateClickPatch
     {
         private static void Prefix(PickupableItem ___heldItem, GoPointerButton ___clickedButton, ref GoPointerButton ___pointedAtButton)

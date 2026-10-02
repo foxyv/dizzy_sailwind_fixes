@@ -4,9 +4,8 @@ using UnityEngine;
 namespace Dizzy.Fixes
 {
     // The look ray stops on the first collider. Food already on a drying
-    // rack or shelf is in front of that surface, and PreferSittingItemLook
-    // will also grab a nearby apple. Either way the rack never stays
-    // targeted, so a held apple highlights the one on the shelf instead of
+    // rack or shelf is in front of that surface, so the rack never stays
+    // targeted and a held apple highlights the one on the shelf instead of
     // placing. While holding food, skip other food and keep the next
     // surface the held item is allowed to click.
     internal static class HeldFoodLook
