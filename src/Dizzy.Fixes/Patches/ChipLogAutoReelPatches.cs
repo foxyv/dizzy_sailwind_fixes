@@ -61,6 +61,45 @@ namespace Dizzy.Fixes
             return Deployed.TryGetValue(log.GetInstanceID(), out deployed) && deployed;
         }
 
+        // A bobber parented to the shifting world can be left kilometres
+        // away when the reel is collected, so the line is already out and
+        // the speed pointer never sees tension. The Fort Aestrin log is
+        // the one that shows up that way. Pull it home.
+        internal static void RecoverLostBobber(
+            ShipItemChipLog log,
+            ref bool thrown,
+            ConfigurableJoint bobberJoint,
+            ref Rigidbody bobberBody,
+            Vector3 initialBobberPos,
+            ref float currentTargetLength,
+            float minLength,
+            float maxLength)
+        {
+            if (!Enabled() || log == null || bobberJoint == null || maxLength < 1f)
+                return;
+
+            if (bobberBody == null)
+                bobberBody = bobberJoint.GetComponent<Rigidbody>();
+            if (bobberBody == null)
+                return;
+
+            float dist = Vector3.Distance(bobberJoint.transform.position, log.transform.position);
+            if (dist <= maxLength + 1f)
+                return;
+
+            thrown = false;
+            Forget(log);
+            currentTargetLength = minLength;
+            SoftJointLimit limit = bobberJoint.linearLimit;
+            limit.limit = minLength;
+            bobberJoint.linearLimit = limit;
+            if (initialBobberPos == Vector3.zero)
+                initialBobberPos = bobberJoint.connectedAnchor;
+            bobberBody.isKinematic = true;
+            bobberJoint.transform.position = log.transform.TransformPoint(initialBobberPos);
+            bobberJoint.transform.rotation = log.transform.rotation;
+        }
+
         internal static void HoldOnReel(
             ShipItemChipLog log,
             bool thrown,
@@ -71,7 +110,7 @@ namespace Dizzy.Fixes
             ref float currentTargetLength,
             float minLength)
         {
-            if (!Enabled() || log == null || !log.sold || thrown || throwing || bobberJoint == null)
+            if (!Enabled() || log == null || thrown || throwing || bobberJoint == null)
                 return;
 
             if (bobberBody == null)
@@ -144,14 +183,24 @@ namespace Dizzy.Fixes
     {
         private static void Postfix(
             ShipItemChipLog __instance,
-            bool ___thrown,
+            ref bool ___thrown,
             bool ___throwing,
             ConfigurableJoint ___bobberJoint,
             ref Rigidbody ___bobberBody,
             Vector3 ___initialBobberPos,
             ref float ___currentTargetLength,
-            float ___minLength)
+            float ___minLength,
+            float ___maxLength)
         {
+            ChipLogDeployed.RecoverLostBobber(
+                __instance,
+                ref ___thrown,
+                ___bobberJoint,
+                ref ___bobberBody,
+                ___initialBobberPos,
+                ref ___currentTargetLength,
+                ___minLength,
+                ___maxLength);
             ChipLogDeployed.HoldOnReel(
                 __instance,
                 ___thrown,

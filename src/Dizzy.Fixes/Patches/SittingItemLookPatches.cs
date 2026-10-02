@@ -128,6 +128,8 @@ namespace Dizzy.Fixes
                 return false;
             if (HeldFoodLook.Enabled() && HeldFoodLook.HoldingFood(held) && item is ShipItemFood)
                 return false;
+            if (HeldFirewoodLook.Enabled() && HeldFirewoodLook.IsFirewood(held) && HeldFirewoodLook.IsFirewood(item))
+                return false;
 
             ShipItem shipItem = item as ShipItem;
             if (shipItem == null)

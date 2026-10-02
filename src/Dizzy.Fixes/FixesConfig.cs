@@ -13,6 +13,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> PreferDroppedAnchorLook;
         internal static ConfigEntry<bool> RightClickNearestDockMooring;
         internal static ConfigEntry<float> RightClickNearestDockMooringFeet;
+        internal static ConfigEntry<float> RightClickNearestDockMooringArcDegrees;
         internal static ConfigEntry<bool> PreferMooredDockLineLook;
         internal static ConfigEntry<bool> RightClickBoatMooringCastOff;
         internal static ConfigEntry<bool> HideInventoryOnNeedsWarning;
@@ -29,11 +30,13 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> KeepMerchantSellScroll;
         internal static ConfigEntry<bool> PreferSittingItemLook;
         internal static ConfigEntry<bool> SkipOtherFoodWhileHolding;
+        internal static ConfigEntry<bool> SkipOtherFirewoodWhileHolding;
         internal static ConfigEntry<bool> PreferCrateInventorySlot;
         internal static ConfigEntry<bool> ReleaseDestroyedHeldItem;
         internal static ConfigEntry<bool> SkipSmoothOriginShift;
         internal static ConfigEntry<bool> KeepCrateContentsWithBoat;
         internal static ConfigEntry<bool> DropBigCratePastOtherCrates;
+        internal static ConfigEntry<bool> KeepMissionListPage;
         internal static ConfigEntry<bool> DelayBoatCacheSpawn;
 
         internal static void Bind(ConfigFile config)
@@ -84,13 +87,19 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "RightClickNearestDockMooring",
                 true,
-                "Right-click while holding a mooring line throws it to the nearest free dock cleat. Vanilla left-click needs a 1.8 m look on the tiny post, which dock mesh often blocks.");
+                "Right-click while holding a mooring line throws it to a free dock cleat in front of you. Vanilla left-click needs a 1.8 m look on the tiny post, which dock mesh often blocks.");
 
             RightClickNearestDockMooringFeet = config.Bind(
                 "Fixes",
                 "RightClickNearestDockMooringFeet",
                 15f,
                 "How far (in feet) right-click will search for a free dock cleat while holding a mooring line. Default 15. This is in-game feet (world units), not a real-world metric conversion.");
+
+            RightClickNearestDockMooringArcDegrees = config.Bind(
+                "Fixes",
+                "RightClickNearestDockMooringArcDegrees",
+                10f,
+                "How wide (in degrees) the forward arc is when throwing a mooring line. Only a free cleat inside that arc can be hit, and the one closest to the middle of the arc wins. Default 10 is the full width, 5 degrees either side of where you are facing.");
 
             PreferMooredDockLineLook = config.Bind(
                 "Fixes",
@@ -120,7 +129,7 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "KeepChipLogDeployed",
                 true,
-                "When waves lift the chip log after it has been thrown and the bobber has already been in the water, pay the line out instead of winding it in. Vanilla auto-returns whenever the bobber is airborne, including chop. Until you throw a newly bought log, the bobber stays on the reel (vanilla leaves it at the stall, so the line runs out and the speed pointer stays at zero until you reload). The toss can still reel in the air. Right-click still reels it in.");
+                "When waves lift the chip log after it has been thrown and the bobber has already been in the water, pay the line out instead of winding it in. Vanilla auto-returns whenever the bobber is airborne, including chop. Until you throw a log, the bobber stays on the reel. A bobber left behind in the world, including on the Fort Aestrin log, is pulled back. The toss can still reel in the air. Right-click still reels it in.");
 
             PreventBoatCacheSpawnLoop = config.Bind(
                 "Fixes",
@@ -190,6 +199,12 @@ namespace Dizzy.Fixes
                 true,
                 "While holding food, the look ray skips other food on a shelf or drying rack so you can place what you're holding. Vanilla highlights those items, and the sitting-item look will grab a nearby apple, so the rack never stays targeted.");
 
+            SkipOtherFirewoodWhileHolding = config.Bind(
+                "Fixes",
+                "SkipOtherFirewoodWhileHolding",
+                true,
+                "While holding a piece of firewood, the look ray skips other pieces so left click can set it down. Vanilla highlights the next piece, and a highlighted object blocks the drop.");
+
             PreferCrateInventorySlot = config.Bind(
                 "Fixes",
                 "PreferCrateInventorySlot",
@@ -219,6 +234,12 @@ namespace Dizzy.Fixes
                 "DropBigCratePastOtherCrates",
                 true,
                 "While carrying a two-handed item, the look ray ignores other objects so left-click can drop it, except an object that item can use, the merchant sell button, and boat ladders. Climbing a ladder keeps the carried item. A held barrel can still be clicked on another barrel of the same liquid to refill. Vanilla highlights the next object, and a highlighted object blocks the drop.");
+
+            KeepMissionListPage = config.Bind(
+                "Fixes",
+                "KeepMissionListPage",
+                true,
+                "Accepting a port mission keeps the mission list on the current page. The accepted mission drops out and later missions shift into that page. Vanilla reloads page 1 while the page number stays where it was.");
 
             DelayBoatCacheSpawn = config.Bind(
                 "Debug",
