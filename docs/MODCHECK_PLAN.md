@@ -17,19 +17,20 @@ Release 0.3.1 after step 4 (low-risk steps), and 0.3.2 after steps 5-7.
     - [x] **5b. Held items:** `InventoryWithdrawSipPatches`, `ItemPlaceAlignPatches`, `SoupMugPatches` (spill).
     - [x] **5c. World and physics:** `BoatCacheSpawnPatches`, `OriginShiftWaitPatches`, `SailHingeSnapPatches`, `MirageMountainMapPatches`.
 - [x] **6. Look fixes in menus, sleep and third-person camera** (SW502 x6). Decompile vanilla `GoPointer.DoRaycast` and add one shared guard so the look fixes skip whenever vanilla doesn't aim. Leave the roll fix running during sleep, since keeping items settled after sleep is part of its job.
-- [ ] **7. Stop at the nearest wall** (SW501, `LookRayPatches.cs`). `LookRay` records the nearest solid hit; the stove, hook and held-item fixes ignore anything past it. The anchor and mooring fixes keep looking through ground and dock mesh on purpose. Biggest behavior change: longest playtest.
+- [x] **7. Stop at the nearest wall** (SW501): **won't fix.** Vanilla's own look ray skips the layers many walls are on (12 OnlyPlayerCol+Paintable, 19 IgnoreSmallItems), so vanilla already targets tables and stoves through walls, and players don't mind placing through walls. Blocking only the walls the look ray hits would change three look fixes for little gain. Could return later as an optional, off-by-default fix.
 - [ ] **Release 0.3.2.**
 - [ ] **8. Review only** (SW206 x2, trade-book SW601). Decide whether compass, fishing rod, scroll, spyglass and mooring rope need pipe-style scroll handling, and whether lights matter for the Mirage map pickup patch. Confirm `WarehouseSync.Validate` covers everything vanilla `ValidateList` does. Record the decision or patch it.
 
 ## Not planned
 
-These 11 warnings are handled or by design; modcheck can't tell.
+These 12 warnings are handled or by design; modcheck can't tell.
 
 | Rule | Where | Why it stays |
 | --- | --- | --- |
 | SW605 | `CrateContentsSavePatches.cs` | `InventoryOf` reuses an existing `CrateInventory` and hands the one it adds to `ShipItemCrate.crateInventory`, so vanilla `OnLoad` keeps it. modcheck flags any `AddComponent<CrateInventory>`. |
 | SW402 | `BigCrateCarryPatches.cs` | `SuppressOutline` fills a reused list, so it allocates nothing; a per-button cache would miss outlines Dizzy.FirewoodBundle adds to bundle logs. modcheck flags any `GetComponentsInChildren` per frame. |
 | SW502 | `ItemRollPatches.cs` | Vanilla freezes items while sleeping; the roll fix keeping an already-frozen capsule frozen afterward is how items stay settled after sleep. |
+| SW501 | `LookRayPatches.cs` | Won't fix (step 7): the look fixes follow vanilla, which also targets through walls. `Cast` is a shared cache; each fix checks distance itself. |
 | SW604 | `LoadSailUnfurlPatches.cs` | Reef save now merges into the loaded data instead of rebuilding it. |
 | SW603 | `SoupMugPatches.cs` | Mug destroy keeps saved soup when the boat unloads or sinks the mug. |
 | SW606 | `UncleanableHullCleaningPatches.cs` | Finalizer swallows only after gold was charged, on purpose. |
