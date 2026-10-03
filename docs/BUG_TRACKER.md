@@ -17,6 +17,15 @@ Copy this template for a new entry:
 
 ## Open
 
+### Fix descriptions are hard to understand
+
+- **Reported:** 2026-10-03 (several users)
+- **Area:** config / docs
+- **Steps:** Read a fix's description in `com.dizzy.sailwind.fixes.cfg`, in the in-game ConfigurationManager, or in the README fixes table.
+- **Expected:** A short, plain line on what the fix changes for the player, so users can decide whether to turn it off.
+- **Actual:** Users report the descriptions are bad: hard to follow, and they don't explain what each fix does.
+- **Notes:** The 32 descriptions in `FixesConfig.cs` average 44 words; the longest are `AlignPlacedItemToSurface` (92), `KeepChipLogDeployed` (78), `DropBigCratePastOtherCrates` (65), `KeepCrateContentsWithBoat` (61) and `KeepLoadedSailsUnfurled` (60). Many explain vanilla internals instead of player-visible behavior, e.g. "world-space TextMesh shares the transparent queue" (`KeepLookTextAboveSmoke`), "kinematic ... angularDrag" (`DampenItemRoll`), "ShiftSmoothly waits 100 physics ticks" (`SkipSmoothOriginShift`). The same text is repeated in the README table, so fix both together. Keep the internals in code comments; the description should say what the player sees with the fix on vs off. Ask the reporting users which fixes confused them most. Related: the mooring distance entry below (labeled feet, actually meters).
+
 ### Allow using items from the third-person view (C) with co-op and player model mods
 
 - **Reported:** 2026-10-03
