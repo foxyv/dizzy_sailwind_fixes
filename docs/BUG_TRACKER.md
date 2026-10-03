@@ -71,6 +71,14 @@ Copy this template for a new entry:
 
 ## Watch list
 
+### Trade book can count a good that left the warehouse yard without a trigger exit
+
+- **Noted:** 2026-10-03 (modcheck plan step 8 review)
+- **Area:** shops and trade
+- **Possible symptoms:** the trade book lists more crates or barrels than are in the yard, or selling through it destroys a crate that is no longer there (for example one you've carried back to your boat).
+- **Why it can happen:** vanilla tracks the yard with `OnTriggerEnter`/`OnTriggerExit` on `IslandMarketWarehouseArea`. Unity doesn't fire `OnTriggerExit` when a collider is disabled or switched to a trigger, so a good can leave without being removed. Our `WarehouseSync.Validate` (`TradeBookFailedSalePatches.cs`) prunes destroyed goods and adds goods the trigger missed, but keeps listed goods that still exist even if they no longer overlap the yard.
+- **If a bug points here:** in `Validate`, also drop listed goods that no longer overlap the trigger, using the existing `Overlaps(col, hit)` check against each good's collider.
+
 ### Look fixes can target things behind walls, decks or hulls
 
 - **Noted:** 2026-10-03 (modcheck SW501; plan step 7, marked won't fix)

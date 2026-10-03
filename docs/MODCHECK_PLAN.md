@@ -19,11 +19,11 @@ Release 0.3.1 after step 4 (low-risk steps), and 0.3.2 after steps 5-7.
 - [x] **6. Look fixes in menus, sleep and third-person camera** (SW502 x6). Decompile vanilla `GoPointer.DoRaycast` and add one shared guard so the look fixes skip whenever vanilla doesn't aim. Leave the roll fix running during sleep, since keeping items settled after sleep is part of its job.
 - [x] **7. Stop at the nearest wall** (SW501): **won't fix.** Vanilla's own look ray skips the layers many walls are on (12 OnlyPlayerCol+Paintable, 19 IgnoreSmallItems), so vanilla already targets tables and stoves through walls, and players don't mind placing through walls. Blocking only the walls the look ray hits would change three look fixes for little gain. Could return later as an optional, off-by-default fix.
 - [x] **Release 0.3.2.**
-- [ ] **8. Review only** (SW206 x2, trade-book SW601). Decide whether compass, fishing rod, scroll, spyglass and mooring rope need pipe-style scroll handling, and whether lights matter for the Mirage map pickup patch. Confirm `WarehouseSync.Validate` covers everything vanilla `ValidateList` does. Record the decision or patch it.
+- [x] **8. Review only** (SW206 x2, trade-book SW601). All three are by design; no code changes. The pipe scroll patch only acts on `ShipItemPipe`, which doesn't override `OnScroll`. The Mirage pickup patch only acts on the chart (prefab 165, a `ShipItemFoldable`) and skips hangables, so `ShipItemLight` never matters. `WarehouseSync.Validate` does everything vanilla `ValidateList` does, plus pruning destroyed goods, rescanning the yard and rebuilding the counts. One shared gap went to the bug tracker watch list.
 
-## Not planned
+## Handled or by design
 
-These 12 warnings are handled or by design; modcheck can't tell.
+All 15 remaining warnings are handled or by design; modcheck can't tell.
 
 | Rule | Where | Why it stays |
 | --- | --- | --- |
@@ -31,6 +31,9 @@ These 12 warnings are handled or by design; modcheck can't tell.
 | SW402 | `BigCrateCarryPatches.cs` | `SuppressOutline` fills a reused list, so it allocates nothing; a per-button cache would miss outlines Dizzy.FirewoodBundle adds to bundle logs. modcheck flags any `GetComponentsInChildren` per frame. |
 | SW502 | `ItemRollPatches.cs` | Vanilla freezes items while sleeping; the roll fix keeping an already-frozen capsule frozen afterward is how items stay settled after sleep. |
 | SW501 | `LookRayPatches.cs` | Won't fix (step 7): the look fixes follow vanilla, which also targets through walls. `Cast` is a shared cache; each fix checks distance itself. |
+| SW206 | `ItemPlaceAlignPatches.cs` | The pipe scroll patch only acts on `ShipItemPipe`; the five types that skip it (mooring rope, compass, fishing rod, scroll, spyglass) aren't pipes. |
+| SW206 | `MirageMountainMapPatches.cs` | The pickup patch only acts on the Mirage chart and skips hangables; `ShipItemLight` is a hangable. |
+| SW601 | `TradeBookFailedSalePatches.cs` | `WarehouseSync.Validate` replaces `ValidateList` on purpose: it keeps vanilla's invalid-good removal and adds null pruning, a yard rescan and a recount. The warehouse area is the market's only stock counter. |
 | SW604 | `LoadSailUnfurlPatches.cs` | Reef save now merges into the loaded data instead of rebuilding it. |
 | SW603 | `SoupMugPatches.cs` | Mug destroy keeps saved soup when the boat unloads or sinks the mug. |
 | SW606 | `UncleanableHullCleaningPatches.cs` | Finalizer swallows only after gold was charged, on purpose. |
