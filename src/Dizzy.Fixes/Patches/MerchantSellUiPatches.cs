@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
 
@@ -163,18 +164,31 @@ namespace Dizzy.Fixes
             return Vector3.zero;
         }
 
+        // Shopkeepers live in island scenes that load and unload. Each one
+        // registers as it starts; ones destroyed with their island are
+        // pruned here, instead of searching the scene every frame.
+        private static readonly List<Shopkeeper> Keepers = new List<Shopkeeper>();
+
+        internal static void Register(Shopkeeper keeper)
+        {
+            if (keeper != null && !Keepers.Contains(keeper))
+                Keepers.Add(keeper);
+        }
+
         private static Shopkeeper ClosestKeeper(Vector3 from)
         {
-            Shopkeeper[] keepers = Object.FindObjectsOfType<Shopkeeper>();
-            if (keepers == null || keepers.Length == 0)
-                return null;
-
             Shopkeeper best = null;
             float bestDist = CloseDistance;
-            for (int i = 0; i < keepers.Length; i++)
+            for (int i = Keepers.Count - 1; i >= 0; i--)
             {
-                Shopkeeper keeper = keepers[i];
-                if (keeper == null || !keeper.gameObject.activeInHierarchy)
+                Shopkeeper keeper = Keepers[i];
+                if (keeper == null)
+                {
+                    Keepers.RemoveAt(i);
+                    continue;
+                }
+
+                if (!keeper.gameObject.activeInHierarchy)
                     continue;
 
                 float dist = Vector3.Distance(from, keeper.transform.position);
@@ -196,6 +210,15 @@ namespace Dizzy.Fixes
                 return;
             _loggedMissing = true;
             Plugin.Log.LogWarning("KeepMerchantSellScroll: BuyItemUI fields are missing; leaving vanilla sell parchment.");
+        }
+    }
+
+    [HarmonyPatch(typeof(Shopkeeper), "Start")]
+    internal static class MerchantSellRegisterPatch
+    {
+        private static void Postfix(Shopkeeper __instance)
+        {
+            MerchantSellUi.Register(__instance);
         }
     }
 

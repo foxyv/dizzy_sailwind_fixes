@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
 
@@ -62,18 +63,21 @@ namespace Dizzy.Fixes
             pointed = clicked;
         }
 
+        // Runs from UpdateColor every frame, so fill one reused list instead
+        // of allocating an array of every child component.
+        private static readonly List<cakeslice.Outline> Outlines = new List<cakeslice.Outline>();
+
         internal static void SuppressOutline(GoPointerButton button)
         {
-            Component[] parts = button.GetComponentsInChildren<Component>(true);
-            for (int i = 0; i < parts.Length; i++)
+            button.GetComponentsInChildren(true, Outlines);
+            for (int i = 0; i < Outlines.Count; i++)
             {
-                if (parts[i] == null || parts[i].GetType().Name != "Outline")
-                    continue;
-
-                Behaviour outline = parts[i] as Behaviour;
+                cakeslice.Outline outline = Outlines[i];
                 if (outline != null && outline.enabled)
                     outline.enabled = false;
             }
+
+            Outlines.Clear();
         }
     }
 

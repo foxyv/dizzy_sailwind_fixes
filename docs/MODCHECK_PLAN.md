@@ -10,7 +10,7 @@ Release 0.3.1 after step 4 (low-risk steps), and 0.3.2 after steps 5-7.
 - [x] **1. Release tooling** (SW111 x2, SW106). `package-release.ps1` reads the version from `Plugin.cs` and always builds with `-p:DeployOnBuild=false`. The csproj deploy target that copied the DLL into the game folder is removed. No gameplay change.
 - [x] **2. Duplicate crate inventory** (SW605 x2, `CrateContentsSavePatches.cs:61`, `:188`). Vanilla `ShipItemCrate.OnLoad` checks its private `crateInventory` field, not `GetComponent`, so a `CrateInventory` added by the fix first leads to two. Set that field when the fix adds one. Test: open, reload and empty crates on a boat.
 - [x] **3. Trade-book zone check** (SW608, `TradeBookFailedSalePatches.cs:101`). `OverlapBox` uses the world-aligned `col.bounds` with `Quaternion.identity`, so a rotated warehouse zone gets a box that reaches past it. Gather candidates in the trigger's bounding sphere, then keep only goods that overlap the real trigger shape (`Physics.ComputePenetration`). Test: trade-book sales at a couple of ports.
-- [ ] **4. Per-frame scene search and allocation** (SW401, SW402). Find shopkeepers once per scene load instead of every frame while the sell UI is open (`MerchantSellUiPatches.cs:168`). Cache each item's `Outline` components in the big-crate outline code (`BigCrateCarryPatches.cs:67`). Test: merchant sell UI, carrying big crates.
+- [x] **4. Per-frame scene search and allocation** (SW401, SW402). Register shopkeepers as they start (pruning ones destroyed with their island) instead of searching the scene every frame while the sell UI is open (`MerchantSellUiPatches.cs:168`). Fill a reused list of `cakeslice.Outline` in the big-crate outline code (`BigCrateCarryPatches.cs:67`) instead of allocating every child component and comparing type names. Test: merchant sell UI, carrying big crates.
 - [ ] **Release 0.3.1.**
 - [ ] **5. Per-frame reflection** (SW403 x20). Replace `Traverse.Create` with `AccessTools.FieldRefAccess` and cached method delegates. No behavior change. Three commits:
     - [ ] **5a. Look and UI:** `LookTextSmokePatches`, `SoupMugPatches` (look-text prompt), `MerchantSellUiPatches`, `HideInventoryOnNeedsWarningPatches`.
@@ -23,11 +23,12 @@ Release 0.3.1 after step 4 (low-risk steps), and 0.3.2 after steps 5-7.
 
 ## Not planned
 
-These 9 warnings are handled or by design; modcheck can't tell.
+These 10 warnings are handled or by design; modcheck can't tell.
 
 | Rule | Where | Why it stays |
 | --- | --- | --- |
 | SW605 | `CrateContentsSavePatches.cs` | `InventoryOf` reuses an existing `CrateInventory` and hands the one it adds to `ShipItemCrate.crateInventory`, so vanilla `OnLoad` keeps it. modcheck flags any `AddComponent<CrateInventory>`. |
+| SW402 | `BigCrateCarryPatches.cs` | `SuppressOutline` fills a reused list, so it allocates nothing; a per-button cache would miss outlines Dizzy.FirewoodBundle adds to bundle logs. modcheck flags any `GetComponentsInChildren` per frame. |
 | SW604 | `LoadSailUnfurlPatches.cs` | Reef save now merges into the loaded data instead of rebuilding it. |
 | SW603 | `SoupMugPatches.cs` | Mug destroy keeps saved soup when the boat unloads or sinks the mug. |
 | SW606 | `UncleanableHullCleaningPatches.cs` | Finalizer swallows only after gold was charged, on purpose. |
