@@ -44,21 +44,24 @@ namespace Dizzy.Fixes
             return ui != null && ui.activeItem == item;
         }
 
+        private static readonly AccessTools.FieldRef<BuyItemUI, bool> PlayerIsSelling = GameMembers.Field<BuyItemUI, bool>("playerIsSelling");
+        private static readonly AccessTools.FieldRef<BuyItemUI, Shopkeeper> ActiveShopkeeper = GameMembers.Field<BuyItemUI, Shopkeeper>("activeShopkeeper");
+
+        private static bool FieldsFound()
+        {
+            if (PlayerIsSelling != null && ActiveShopkeeper != null)
+                return true;
+
+            WarnOnce();
+            return false;
+        }
+
         internal static void Tick(BuyItemUI ui)
         {
-            if (!Enabled() || ui == null)
+            if (!Enabled() || ui == null || !FieldsFound())
                 return;
 
-            Traverse t = Traverse.Create(ui);
-            Traverse selling = t.Field("playerIsSelling");
-            Traverse keeperField = t.Field("activeShopkeeper");
-            if (!selling.FieldExists() || !keeperField.FieldExists())
-            {
-                WarnOnce();
-                return;
-            }
-
-            if (!selling.GetValue<bool>())
+            if (!PlayerIsSelling(ui))
                 return;
 
             ShipItem item = ui.activeItem;
@@ -69,7 +72,7 @@ namespace Dizzy.Fixes
             }
 
             Vector3 from = From(item);
-            Shopkeeper current = keeperField.GetValue<Shopkeeper>();
+            Shopkeeper current = ActiveShopkeeper(ui);
             Shopkeeper closest = ClosestKeeper(from);
             if (closest == null)
             {
@@ -94,7 +97,7 @@ namespace Dizzy.Fixes
                 }
             }
 
-            Attach(ui, t, closest, item);
+            Attach(ui, closest, item);
         }
 
         internal static void Consider(Shopkeeper candidate, ShipItem item)
@@ -103,17 +106,8 @@ namespace Dizzy.Fixes
                 return;
 
             BuyItemUI ui = BuyItemUI.instance;
-            if (ui == null)
+            if (ui == null || !FieldsFound())
                 return;
-
-            Traverse t = Traverse.Create(ui);
-            Traverse selling = t.Field("playerIsSelling");
-            Traverse keeperField = t.Field("activeShopkeeper");
-            if (!selling.FieldExists() || !keeperField.FieldExists())
-            {
-                WarnOnce();
-                return;
-            }
 
             if (ui.activeItem != null && ui.activeItem != item)
                 return;
@@ -124,11 +118,11 @@ namespace Dizzy.Fixes
                 return;
             }
 
-            if (!selling.GetValue<bool>())
+            if (!PlayerIsSelling(ui))
                 return;
 
             Vector3 from = From(item);
-            Shopkeeper current = keeperField.GetValue<Shopkeeper>();
+            Shopkeeper current = ActiveShopkeeper(ui);
             if (current == candidate)
                 return;
 
@@ -140,13 +134,13 @@ namespace Dizzy.Fixes
                     return;
             }
 
-            Attach(ui, t, candidate, item);
+            Attach(ui, candidate, item);
         }
 
-        private static void Attach(BuyItemUI ui, Traverse t, Shopkeeper keeper, ShipItem item)
+        private static void Attach(BuyItemUI ui, Shopkeeper keeper, ShipItem item)
         {
-            t.Field("activeShopkeeper").SetValue(keeper);
-            t.Field("playerIsSelling").SetValue(true);
+            ActiveShopkeeper(ui) = keeper;
+            PlayerIsSelling(ui) = true;
             ui.activeItem = item;
             ui.transform.position = keeper.transform.position;
             if (ui.buyText != null)
