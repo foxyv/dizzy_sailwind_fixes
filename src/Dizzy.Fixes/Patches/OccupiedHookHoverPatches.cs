@@ -9,10 +9,6 @@ namespace Dizzy.Fixes
     // hands are empty.
     internal static class OccupiedHookLook
     {
-        private const float MaxDistance = 1.8f;
-        private const int LayerMask = -604165;
-        private static readonly RaycastHit[] Hits = new RaycastHit[32];
-
         internal static GoPointerButton HangingItemOnLookRay(
             GoPointerButton vanilla,
             bool debugEditorPointer,
@@ -35,12 +31,13 @@ namespace Dizzy.Fixes
 
         private static ShipItemLampHook ClosestHook(Ray ray)
         {
-            int count = Physics.RaycastNonAlloc(ray, Hits, MaxDistance, LayerMask);
+            RaycastHit[] hits;
+            int count = LookRay.Cast(ray, false, out hits);
             ShipItemLampHook best = null;
             float bestDistance = float.MaxValue;
             for (int i = 0; i < count; i++)
             {
-                Collider collider = Hits[i].collider;
+                Collider collider = hits[i].collider;
                 if (collider == null)
                     continue;
                 if (collider.CompareTag("ItemSubcollider") && collider.transform.parent != null)
@@ -51,10 +48,10 @@ namespace Dizzy.Fixes
                 ShipItemLampHook hook = collider.GetComponent<ShipItemLampHook>();
                 if (hook == null)
                     continue;
-                if (Hits[i].distance >= bestDistance)
+                if (hits[i].distance >= bestDistance)
                     continue;
 
-                bestDistance = Hits[i].distance;
+                bestDistance = hits[i].distance;
                 best = hook;
             }
 

@@ -22,7 +22,6 @@ namespace Dizzy.Fixes
 
         private const string FirewoodBundleGuid = "com.dizzy.sailwind.firewoodbundle";
 
-        private static readonly RaycastHit[] Hits = new RaycastHit[32];
         private static bool _bundleChecked;
         private static ConfigEntryBase _bundleStackFirewood;
 
@@ -108,20 +107,17 @@ namespace Dizzy.Fixes
                 return null;
 
             Ray ray = SittingItemLook.MakeRay(debugEditorPointer, raycastRay);
-            int count = Physics.RaycastNonAlloc(
-                ray,
-                Hits,
-                SittingItemLook.MaxDistance,
-                SittingItemLook.LayerMask);
+            RaycastHit[] hits;
+            int count = LookRay.Cast(ray, false, out hits);
             GoPointerButton best = null;
             float bestDistance = float.MaxValue;
             for (int i = 0; i < count; i++)
             {
-                float distance = Hits[i].distance;
+                float distance = hits[i].distance;
                 if (distance >= bestDistance)
                     continue;
 
-                Collider collider = Hits[i].collider;
+                Collider collider = hits[i].collider;
                 if (collider != null && collider.CompareTag("ItemSubcollider") && collider.transform.parent != null)
                     collider = collider.transform.parent.GetComponent<Collider>();
                 if (collider == null)
