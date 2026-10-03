@@ -192,7 +192,10 @@ namespace Dizzy.Fixes
         }
     }
 
+    // Runs first of the empty-hand look fixes; the hook, anchor, and mooring
+    // fixes step down from Priority.Normal so each can override the one before.
     [HarmonyPatch(typeof(GoPointer), "DoRaycast")]
+    [HarmonyPriority(Priority.Normal)]
     internal static class StoveHoverFlickerPatch
     {
         private static void Postfix(

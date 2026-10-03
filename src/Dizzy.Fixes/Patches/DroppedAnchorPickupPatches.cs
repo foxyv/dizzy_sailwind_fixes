@@ -188,7 +188,7 @@ namespace Dizzy.Fixes
     }
 
     [HarmonyPatch(typeof(GoPointer), "DoRaycast")]
-    [HarmonyAfter("Dizzy.Fixes.StoveHoverFlickerPatch", "Dizzy.Fixes.OccupiedHookHoverPatch")]
+    [HarmonyPriority(Priority.Normal - 20)]
     internal static class DroppedAnchorLookPatch
     {
         private static void Postfix(

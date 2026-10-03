@@ -202,7 +202,7 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "SkipOtherFirewoodWhileHolding",
                 true,
-                "While holding a piece of firewood, the look ray skips other pieces so left click can set it down. Vanilla highlights the next piece, and a highlighted object blocks the drop.");
+                "While holding a piece of firewood, the look ray skips other pieces so left click can set it down. Vanilla highlights the next piece, and a highlighted object blocks the drop. Turns itself off while Dizzy.FirewoodBundle is installed with Stack Firewood on, since that mod does the same.");
 
             ReleaseDestroyedHeldItem = config.Bind(
                 "Fixes",

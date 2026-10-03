@@ -129,7 +129,6 @@ namespace Dizzy.Fixes
 
     [HarmonyPatch(typeof(GoPointer), "LateUpdate")]
     [HarmonyPriority(Priority.Last)]
-    [HarmonyAfter("Dizzy.Fixes.ItemPlaceAlignPreviewPatch")]
     internal static class DropBigCrateClickPatch
     {
         private static void Prefix(PickupableItem ___heldItem, GoPointerButton ___clickedButton, ref GoPointerButton ___pointedAtButton)

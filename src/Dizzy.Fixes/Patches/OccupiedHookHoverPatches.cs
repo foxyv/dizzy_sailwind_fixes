@@ -90,7 +90,7 @@ namespace Dizzy.Fixes
     }
 
     [HarmonyPatch(typeof(GoPointer), "DoRaycast")]
-    [HarmonyAfter("Dizzy.Fixes.StoveHoverFlickerPatch")]
+    [HarmonyPriority(Priority.Normal - 10)]
     internal static class OccupiedHookHoverPatch
     {
         private static void Postfix(

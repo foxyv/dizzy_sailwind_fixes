@@ -92,6 +92,12 @@ namespace Dizzy.Fixes
                 + ":" + sail.prefabIndex.ToString(CultureInfo.InvariantCulture);
         }
 
+        private static string BoatOf(string key)
+        {
+            int colon = key.IndexOf(':');
+            return colon > 0 ? key.Substring(0, colon) : key;
+        }
+
         private static void ReadModData()
         {
             SavedLength.Clear();
@@ -127,7 +133,11 @@ namespace Dizzy.Fixes
             if (GameState.modData == null)
                 GameState.modData = new Dictionary<string, string>();
 
-            SavedLength.Clear();
+            // Merge into the loaded data: FindObjectsOfType skips inactive
+            // boats, whose entries must survive. Only boats seen here drop keys
+            // for sails they no longer have.
+            Dictionary<string, float> live = new Dictionary<string, float>();
+            HashSet<string> liveBoats = new HashSet<string>();
             RopeControllerSailReef[] reefs = Object.FindObjectsOfType<RopeControllerSailReef>();
             if (reefs != null)
             {
@@ -139,9 +149,21 @@ namespace Dizzy.Fixes
                     string key = MakeKey(reef.sail);
                     if (key == null)
                         continue;
-                    SavedLength[key] = Mathf.Clamp01(reef.currentLength);
+                    live[key] = Mathf.Clamp01(reef.currentLength);
+                    liveBoats.Add(BoatOf(key));
                 }
             }
+
+            List<string> stale = new List<string>();
+            foreach (string key in SavedLength.Keys)
+            {
+                if (liveBoats.Contains(BoatOf(key)) && !live.ContainsKey(key))
+                    stale.Add(key);
+            }
+            for (int i = 0; i < stale.Count; i++)
+                SavedLength.Remove(stale[i]);
+            foreach (KeyValuePair<string, float> pair in live)
+                SavedLength[pair.Key] = pair.Value;
 
             if (SavedLength.Count == 0)
             {

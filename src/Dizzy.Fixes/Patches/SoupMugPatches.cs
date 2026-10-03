@@ -310,6 +310,15 @@ namespace Dizzy.Fixes
                 WriteModData();
         }
 
+        // The mug is being destroyed because its boat cached its items (out of
+        // range or sunk), not because it was used up. Drop the live link but
+        // keep the saved contents so they come back when the boat respawns it.
+        internal static void Unload(ShipItemBottle mug)
+        {
+            if (mug != null)
+                ByMug.Remove(mug.GetInstanceID());
+        }
+
         internal static void RestoreAfterLoad()
         {
             ReadModData();
@@ -348,12 +357,16 @@ namespace Dizzy.Fixes
             if (GameState.modData == null)
                 GameState.modData = new Dictionary<string, string>();
 
-            ByPrefabId.Clear();
+            // Merge rather than rebuild: mugs on boats beyond the horizon are
+            // not loaded, and their entries must survive the save.
             foreach (Contents contents in ByMug.Values)
             {
-                if (contents == null || contents.Water <= FullEpsilon || contents.PrefabId == 0)
+                if (contents == null || contents.PrefabId == 0)
                     continue;
-                ByPrefabId[contents.PrefabId] = contents;
+                if (contents.Water <= FullEpsilon)
+                    ByPrefabId.Remove(contents.PrefabId);
+                else
+                    ByPrefabId[contents.PrefabId] = contents;
             }
 
             if (ByPrefabId.Count == 0)
@@ -617,7 +630,13 @@ namespace Dizzy.Fixes
             if (!FixesConfig.PourSoupIntoMug.Value)
                 return;
             ShipItemBottle mug = __instance.GetComponent<ShipItemBottle>();
-            if (mug != null)
+            if (mug == null)
+                return;
+            SaveablePrefab saveable = __instance.GetComponent<SaveablePrefab>();
+            int parent = saveable != null ? saveable.GetParentObject() : 0;
+            if (parent == -2 || parent == -3)
+                SoupMugs.Unload(mug);
+            else
                 SoupMugs.Forget(mug);
         }
     }

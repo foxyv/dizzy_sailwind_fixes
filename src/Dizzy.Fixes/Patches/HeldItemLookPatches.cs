@@ -1,37 +1,110 @@
+using BepInEx.Bootstrap;
+using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
 
 namespace Dizzy.Fixes
 {
-    // The look ray stops on the first collider. Food already on a drying
-    // rack or shelf is in front of that surface, so the rack never stays
-    // targeted and a held apple highlights the one on the shelf instead of
-    // placing. While holding food, skip other food and keep the next
-    // surface the held item is allowed to click.
-    internal static class HeldFoodLook
+    // The look ray stops on the first collider, and a highlighted object
+    // blocks the drop. Food on a drying rack or shelf sits in front of that
+    // surface, so a held apple highlights the one on the shelf instead of
+    // placing; a held piece of firewood highlights the next piece and left
+    // click does nothing. While holding either, skip items of the same kind
+    // and keep the next surface the held item is allowed to click.
+    internal static class HeldItemLook
     {
-        private static readonly RaycastHit[] Hits = new RaycastHit[32];
+        internal enum Kind
+        {
+            None,
+            Food,
+            Firewood
+        }
 
-        internal static bool Enabled()
+        private const string FirewoodBundleGuid = "com.dizzy.sailwind.firewoodbundle";
+
+        private static readonly RaycastHit[] Hits = new RaycastHit[32];
+        private static bool _bundleChecked;
+        private static ConfigEntryBase _bundleStackFirewood;
+
+        // The kind this fix acts on for the held item, or None when the item
+        // is neither or its toggle is off.
+        internal static Kind ActiveKind(PickupableItem held)
+        {
+            if (HoldingFood(held))
+                return FoodEnabled() ? Kind.Food : Kind.None;
+            if (IsFirewood(held))
+                return FirewoodEnabled() ? Kind.Firewood : Kind.None;
+            return Kind.None;
+        }
+
+        internal static bool SameKind(Kind kind, Component item)
+        {
+            if (kind == Kind.Food)
+                return item is ShipItemFood;
+            if (kind == Kind.Firewood)
+                return IsFirewood(item);
+            return false;
+        }
+
+        private static bool FoodEnabled()
         {
             return FixesConfig.SkipOtherFoodWhileHolding != null
                 && FixesConfig.SkipOtherFoodWhileHolding.Value;
         }
 
+        private static bool FirewoodEnabled()
+        {
+            return FixesConfig.SkipOtherFirewoodWhileHolding != null
+                && FixesConfig.SkipOtherFirewoodWhileHolding.Value
+                && !FirewoodBundleHandlesIt();
+        }
+
+        // Dizzy.FirewoodBundle aims past other wood while a piece is held, and
+        // runs after this patch. Step aside while its "Stack Firewood" is on.
+        private static bool FirewoodBundleHandlesIt()
+        {
+            if (!_bundleChecked)
+            {
+                _bundleChecked = true;
+                BepInEx.PluginInfo info;
+                if (Chainloader.PluginInfos.TryGetValue(FirewoodBundleGuid, out info) && info.Instance != null)
+                {
+                    ConfigDefinition key = new ConfigDefinition("General", "Stack Firewood");
+                    if (info.Instance.Config.ContainsKey(key))
+                        _bundleStackFirewood = info.Instance.Config[key];
+                    else
+                        Plugin.Log.LogWarning("SkipOtherFirewoodWhileHolding: Dizzy.FirewoodBundle has no [General] Stack Firewood setting; keeping this fix on.");
+                }
+            }
+
+            return _bundleStackFirewood != null
+                && _bundleStackFirewood.BoxedValue is bool on
+                && on;
+        }
+
         // A destroyed hold still passes `is ShipItemFood`. Unity's == is
         // what treats it as empty. Eating an apple leaves that corpse in
         // the pointer until another item replaces it.
-        internal static bool HoldingFood(PickupableItem held)
+        private static bool HoldingFood(PickupableItem held)
         {
             return held != null && held is ShipItemFood;
         }
 
-        internal static GoPointerButton SurfaceBehindFood(
+        // ShipItem.name is the item label ("firewood"), not the crate
+        // ("108 crate of firewood") and not the clone's object name.
+        private static bool IsFirewood(Component item)
+        {
+            ShipItem ship = item as ShipItem;
+            return ship != null && ship.name == "firewood";
+        }
+
+        internal static GoPointerButton SurfaceBehind(
+            Kind kind,
             PickupableItem held,
             bool debugEditorPointer,
             Ray raycastRay)
         {
-            if (!HoldingFood(held))
+            if (kind == Kind.None || held == null)
                 return null;
 
             Ray ray = SittingItemLook.MakeRay(debugEditorPointer, raycastRay);
@@ -55,7 +128,7 @@ namespace Dizzy.Fixes
                     continue;
 
                 GoPointerButton button = collider.GetComponent<GoPointerButton>();
-                if (!HeldCanLook(held, button))
+                if (!HeldCanLook(kind, held, button))
                     continue;
 
                 bestDistance = distance;
@@ -65,13 +138,13 @@ namespace Dizzy.Fixes
             return best;
         }
 
-        private static bool HeldCanLook(PickupableItem held, GoPointerButton button)
+        private static bool HeldCanLook(Kind kind, PickupableItem held, GoPointerButton button)
         {
-            if (button == null || button.unclickable || held == null)
+            if (button == null || button.unclickable)
                 return false;
 
             ShipItem ship = button.GetComponent<ShipItem>();
-            if (ship == held || ship is ShipItemFood)
+            if (ship == held || SameKind(kind, button))
                 return false;
             if (held.AllowOnItemClick(button))
                 return true;
@@ -80,8 +153,9 @@ namespace Dizzy.Fixes
     }
 
     [HarmonyPatch(typeof(GoPointer), "DoRaycast")]
-    [HarmonyAfter("Dizzy.Fixes.SittingItemLookPatch")]
-    internal static class SkipOtherFoodWhileHoldingPatch
+    // Just below SittingItemLookPatch (Priority.Low) so it runs after it.
+    [HarmonyPriority(Priority.Low - 10)]
+    internal static class SkipOtherHeldKindPatch
     {
         private static void Postfix(
             GoPointer __instance,
@@ -91,18 +165,20 @@ namespace Dizzy.Fixes
             ref GoPointerButton ___pointedAtButton,
             ref float ___currentLookDistance)
         {
-            if (!HeldFoodLook.Enabled() || !HeldFoodLook.HoldingFood(___heldItem))
+            HeldItemLook.Kind kind = HeldItemLook.ActiveKind(___heldItem);
+            if (kind == HeldItemLook.Kind.None)
                 return;
-            if (___pointedAtButton != null && !(___pointedAtButton is ShipItemFood))
+            if (___pointedAtButton != null && !HeldItemLook.SameKind(kind, ___pointedAtButton))
                 return;
 
-            GoPointerButton surface = HeldFoodLook.SurfaceBehindFood(
+            GoPointerButton surface = HeldItemLook.SurfaceBehind(
+                kind,
                 ___heldItem,
                 ___debugEditorPointer,
                 ___raycastRay);
             if (surface == null || surface == ___pointedAtButton)
             {
-                if (___pointedAtButton is ShipItemFood)
+                if (HeldItemLook.SameKind(kind, ___pointedAtButton))
                 {
                     ___pointedAtButton.ForceUnlook();
                     ___pointedAtButton = null;
