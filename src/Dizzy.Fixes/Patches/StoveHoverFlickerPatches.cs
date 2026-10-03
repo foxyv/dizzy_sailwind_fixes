@@ -11,11 +11,9 @@ namespace Dizzy.Fixes
     internal static class StoveHoverAim
     {
         internal const float MaxDistance = 1.8f;
-        internal const int LayerMask = -604165;
         internal const float StickySeconds = 0.12f;
         internal const float AimRadius = 0.2f;
 
-        private static readonly RaycastHit[] Hits = new RaycastHit[32];
         private static readonly List<ShipItemStove> Stoves = new List<ShipItemStove>(4);
 
         internal static GoPointerButton _sticky;
@@ -56,10 +54,11 @@ namespace Dizzy.Fixes
         internal static void CollectStovesAlongRay(Ray ray)
         {
             Stoves.Clear();
-            int count = Physics.RaycastNonAlloc(ray, Hits, MaxDistance, LayerMask);
+            RaycastHit[] hits;
+            int count = LookRay.Cast(ray, false, out hits);
             for (int i = 0; i < count; i++)
             {
-                Collider collider = ResolveCollider(Hits[i].collider);
+                Collider collider = ResolveCollider(hits[i].collider);
                 if (collider == null)
                     continue;
                 ShipItemStove stove = StoveFrom(collider);
@@ -103,10 +102,11 @@ namespace Dizzy.Fixes
                 }
             }
 
-            int hitCount = Physics.RaycastNonAlloc(ray, Hits, MaxDistance, LayerMask);
+            RaycastHit[] hits;
+            int hitCount = LookRay.Cast(ray, false, out hits);
             for (int i = 0; i < hitCount; i++)
             {
-                Collider collider = ResolveCollider(Hits[i].collider);
+                Collider collider = ResolveCollider(hits[i].collider);
                 if (collider == null)
                     continue;
 
@@ -208,6 +208,11 @@ namespace Dizzy.Fixes
         {
             if (!FixesConfig.StabilizeStoveItemHover.Value)
                 return;
+            if (!LookRay.VanillaAims(__instance))
+            {
+                StoveHoverAim.ClearSticky();
+                return;
+            }
 
             if (___heldItem != null)
             {

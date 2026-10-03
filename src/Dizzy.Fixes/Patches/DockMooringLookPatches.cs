@@ -83,14 +83,10 @@ namespace Dizzy.Fixes
 
         private static void ConsiderRay(Ray ray, ref PickupableBoatMooringRope best, ref float bestDistance)
         {
-            int count = Physics.RaycastNonAlloc(
-                ray,
-                Hits,
-                MaxDistance,
-                LayerMask,
-                QueryTriggerInteraction.Collide);
+            RaycastHit[] hits;
+            int count = LookRay.Cast(ray, true, out hits);
             for (int i = 0; i < count; i++)
-                ConsiderHit(Hits[i], ray, ref best, ref bestDistance);
+                ConsiderHit(hits[i], ray, ref best, ref bestDistance);
         }
 
         private static void ConsiderSphere(Ray ray, ref PickupableBoatMooringRope best, ref float bestDistance)
@@ -173,6 +169,8 @@ namespace Dizzy.Fixes
             ref float ___currentLookDistance)
         {
             if (!FixesConfig.PreferMooredDockLineLook.Value)
+                return;
+            if (!LookRay.VanillaAims(__instance))
                 return;
             if (___heldItem != null)
                 return;

@@ -10,6 +10,8 @@ namespace Dizzy.Fixes
     {
         private const float VisibleScale = 0.01f;
 
+        private static readonly AccessTools.FieldRef<PlayerNeedsUI, Transform> Inventory = GameMembers.Field<PlayerNeedsUI, Transform>("inventory");
+
         private static bool _loggedMissing;
 
         internal static bool IsVisible()
@@ -18,7 +20,7 @@ namespace Dizzy.Fixes
             if (ui == null)
                 return false;
 
-            Transform inventory = Traverse.Create(ui).Field("inventory").GetValue<Transform>();
+            Transform inventory = Inventory != null ? Inventory(ui) : null;
             if (inventory == null)
             {
                 if (!_loggedMissing)

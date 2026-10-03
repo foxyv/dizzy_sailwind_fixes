@@ -1,22 +1,44 @@
 # Packages Dizzy Sailwind Fixes for GitHub Releases.
-# Usage: .\scripts\package-release.ps1 [-Version 0.2.0]
+# Usage: .\scripts\package-release.ps1 [-Version 0.3.1]
+# The version defaults to PluginVersion in Plugin.cs. Passing -Version only
+# checks that it matches, so a zip can never carry the wrong label.
 
 param(
-    [string]$Version = "0.2.0"
+    [string]$Version = ""
 )
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $root
 
-$dll = "src\Dizzy.Fixes\bin\Release\Dizzy.Fixes.dll"
-if (-not (Test-Path $dll)) {
-    Write-Host "Building Dizzy.Fixes Release..."
-    dotnet build src\Dizzy.Fixes\Dizzy.Fixes.csproj -c Release
+$pluginSource = Get-Content "src\Dizzy.Fixes\Plugin.cs" -Raw
+$match = [regex]::Match($pluginSource, 'PluginVersion\s*=\s*"([^"]+)"')
+if (-not $match.Success) {
+    throw "Could not find PluginVersion in src\Dizzy.Fixes\Plugin.cs."
+}
+$pluginVersion = $match.Groups[1].Value
+
+if ($Version -eq "") {
+    $Version = $pluginVersion
+} elseif ($Version -ne $pluginVersion) {
+    throw "-Version $Version does not match PluginVersion $pluginVersion in Plugin.cs."
 }
 
+# Always build, so the zip never carries a stale DLL.
+Write-Host "Building Dizzy.Fixes $Version Release..."
+dotnet build src\Dizzy.Fixes\Dizzy.Fixes.csproj -c Release
+if ($LASTEXITCODE -ne 0) {
+    throw "Build failed."
+}
+
+$dll = "src\Dizzy.Fixes\bin\Release\Dizzy.Fixes.dll"
 if (-not (Test-Path $dll)) {
     throw "Missing $dll - build failed."
+}
+
+$built = [System.Reflection.AssemblyName]::GetAssemblyName((Resolve-Path $dll)).Version
+if ("$($built.Major).$($built.Minor).$($built.Build)" -ne $Version) {
+    throw "Built DLL is version $built, expected $Version. Keep <Version> in the csproj in sync with PluginVersion."
 }
 
 $staging = "dist\Dizzy.Fixes-$Version"

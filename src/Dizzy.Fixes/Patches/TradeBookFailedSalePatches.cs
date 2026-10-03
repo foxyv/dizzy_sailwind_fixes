@@ -98,10 +98,13 @@ namespace Dizzy.Fixes
             Collider col = area.GetComponent<Collider>();
             if (col != null && col.enabled)
             {
-                Collider[] hits = Physics.OverlapBox(
+                // Gather candidates inside the trigger's bounding sphere, then
+                // keep only what overlaps the trigger's real (possibly rotated)
+                // shape, as OnTriggerEnter would. A world-aligned box from
+                // col.bounds reached past a rotated zone.
+                Collider[] hits = Physics.OverlapSphere(
                     col.bounds.center,
-                    col.bounds.extents,
-                    Quaternion.identity,
+                    col.bounds.extents.magnitude,
                     ~0,
                     QueryTriggerInteraction.Collide);
 
@@ -111,7 +114,7 @@ namespace Dizzy.Fixes
                         continue;
 
                     Good good = hit.GetComponent<Good>();
-                    if (good == null || goods.Contains(good))
+                    if (good == null || goods.Contains(good) || !Overlaps(col, hit))
                         continue;
 
                     ShipItem item = good.GetComponent<ShipItem>();
@@ -133,6 +136,24 @@ namespace Dizzy.Fixes
                 if (index >= 0 && index < market.currentPlayerGoods.Length)
                     market.currentPlayerGoods[index]++;
             }
+        }
+
+        private static bool Overlaps(Collider area, Collider other)
+        {
+            if (other == area)
+                return false;
+
+            Vector3 direction;
+            float distance;
+            return Physics.ComputePenetration(
+                area,
+                area.transform.position,
+                area.transform.rotation,
+                other,
+                other.transform.position,
+                other.transform.rotation,
+                out direction,
+                out distance);
         }
 
         private static bool IsGoodValid(IslandMarketWarehouseArea area, Good good)

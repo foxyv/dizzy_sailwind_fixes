@@ -21,6 +21,7 @@ namespace Dizzy.Fixes
 
         private static readonly Dictionary<int, Contents> ByPrefabId = new Dictionary<int, Contents>();
         private static readonly Dictionary<int, Contents> ByMug = new Dictionary<int, Contents>();
+        private static readonly Action<Mug> MugSpill = GameMembers.Method<Action<Mug>>(typeof(Mug), "Spill");
 
         internal sealed class Contents
         {
@@ -173,9 +174,8 @@ namespace Dizzy.Fixes
                 return;
             }
 
-            Traverse spill = Traverse.Create(mug).Method("Spill");
-            if (spill.MethodExists())
-                spill.GetValue();
+            if (MugSpill != null)
+                MugSpill(mug);
         }
 
         private static float SpillUprightThreshold(float level)
@@ -606,17 +606,22 @@ namespace Dizzy.Fixes
     [HarmonyPatch(typeof(LookUI), nameof(LookUI.ShowLookText))]
     internal static class SoupMugFillPromptPatch
     {
+        private static readonly AccessTools.FieldRef<LookUI, GoPointer> Pointer = GameMembers.Field<LookUI, GoPointer>("pointer");
+        private static readonly AccessTools.FieldRef<LookUI, TextMesh> ControlsText = GameMembers.Field<LookUI, TextMesh>("controlsText");
+
         private static void Postfix(LookUI __instance, GoPointerButton button)
         {
             if (!FixesConfig.PourSoupIntoMug.Value || button == null)
                 return;
-            GoPointer pointer = Traverse.Create(__instance).Field("pointer").GetValue<GoPointer>();
+            if (Pointer == null || ControlsText == null)
+                return;
+            GoPointer pointer = Pointer(__instance);
             if (pointer == null)
                 return;
             if (!SoupMugs.TryFillPrompt(pointer.GetHeldItem(), button))
                 return;
 
-            TextMesh controls = Traverse.Create(__instance).Field("controlsText").GetValue<TextMesh>();
+            TextMesh controls = ControlsText(__instance);
             if (controls != null)
                 controls.text = "fill\n";
         }
