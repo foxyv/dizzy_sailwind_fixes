@@ -12,10 +12,10 @@ Release 0.3.1 after step 4 (low-risk steps), and 0.3.2 after steps 5-7.
 - [x] **3. Trade-book zone check** (SW608, `TradeBookFailedSalePatches.cs:101`). `OverlapBox` uses the world-aligned `col.bounds` with `Quaternion.identity`, so a rotated warehouse zone gets a box that reaches past it. Gather candidates in the trigger's bounding sphere, then keep only goods that overlap the real trigger shape (`Physics.ComputePenetration`). Test: trade-book sales at a couple of ports.
 - [x] **4. Per-frame scene search and allocation** (SW401, SW402). Register shopkeepers as they start (pruning ones destroyed with their island) instead of searching the scene every frame while the sell UI is open (`MerchantSellUiPatches.cs:168`). Fill a reused list of `cakeslice.Outline` in the big-crate outline code (`BigCrateCarryPatches.cs:67`) instead of allocating every child component and comparing type names. Test: merchant sell UI, carrying big crates.
 - [x] **Release 0.3.1.**
-- [ ] **5. Per-frame reflection** (SW403 x20). Replace `Traverse.Create` with `AccessTools.FieldRefAccess` and cached method delegates. No behavior change. Three commits:
+- [x] **5. Per-frame reflection** (SW403 x20). Replace `Traverse.Create` with `AccessTools.FieldRefAccess` and cached method delegates. No behavior change. Three commits:
     - [x] **5a. Look and UI:** `LookTextSmokePatches`, `SoupMugPatches` (look-text prompt), `MerchantSellUiPatches`, `HideInventoryOnNeedsWarningPatches`.
     - [x] **5b. Held items:** `InventoryWithdrawSipPatches`, `ItemPlaceAlignPatches`, `SoupMugPatches` (spill).
-    - [ ] **5c. World and physics:** `BoatCacheSpawnPatches`, `OriginShiftWaitPatches`, `SailHingeSnapPatches`, `MirageMountainMapPatches`.
+    - [x] **5c. World and physics:** `BoatCacheSpawnPatches`, `OriginShiftWaitPatches`, `SailHingeSnapPatches`, `MirageMountainMapPatches`.
 - [ ] **6. Look fixes in menus, sleep and third-person camera** (SW502 x6). Decompile vanilla `GoPointer.DoRaycast` and add one shared guard so the look fixes skip whenever vanilla doesn't aim. Leave the roll fix running during sleep, since keeping items settled after sleep is part of its job.
 - [ ] **7. Stop at the nearest wall** (SW501, `LookRayPatches.cs`). `LookRay` records the nearest solid hit; the stove, hook and held-item fixes ignore anything past it. The anchor and mooring fixes keep looking through ground and dock mesh on purpose. Biggest behavior change: longest playtest.
 - [ ] **Release 0.3.2.**

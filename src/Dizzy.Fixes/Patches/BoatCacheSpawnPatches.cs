@@ -14,6 +14,8 @@ namespace Dizzy.Fixes
     // "110 lantern A" each pass.
     internal static class BoatCacheSpawn
     {
+        internal static readonly AccessTools.FieldRef<BoatLocalItems, List<SavePrefabData>> CachedItems = GameMembers.Field<BoatLocalItems, List<SavePrefabData>>("cachedItems");
+
         internal static bool LoggedMissingField;
 
         internal static bool Enabled()
@@ -60,7 +62,6 @@ namespace Dizzy.Fixes
         internal const int Frames = 8;
 
         private static readonly Dictionary<int, int> CrateReleaseFrame = new Dictionary<int, int>();
-        private static bool _loggedMissingItemsLoaded;
 
         internal static bool HeldThisSpawn;
         internal static bool SpawningWithoutCrates;
@@ -76,14 +77,6 @@ namespace Dizzy.Fixes
         {
             CrateReleaseFrame.Clear();
             HeldThisSpawn = false;
-        }
-
-        internal static bool NoteMissingItemsLoaded()
-        {
-            if (_loggedMissingItemsLoaded)
-                return true;
-            _loggedMissingItemsLoaded = true;
-            return false;
         }
 
         // True means skip the full spawn. The crate is still in the cache.
@@ -121,11 +114,10 @@ namespace Dizzy.Fixes
 
         private static int SpawnEverythingExceptCrates(BoatLocalItems boat)
         {
-            Traverse items = Traverse.Create(boat);
-            if (!items.Field("cachedItems").FieldExists())
+            if (BoatCacheSpawn.CachedItems == null)
                 return 0;
 
-            List<SavePrefabData> cached = items.Field("cachedItems").GetValue<List<SavePrefabData>>();
+            List<SavePrefabData> cached = BoatCacheSpawn.CachedItems(boat);
             if (cached == null || cached.Count == 0)
                 return 0;
 
@@ -184,7 +176,7 @@ namespace Dizzy.Fixes
                 ReturnToCache = null;
             }
 
-            items.Field("cachedItems").SetValue(held);
+            BoatCacheSpawn.CachedItems(boat) = held;
             if (spawned > 0)
                 GameState.loadingBoatLocalItems = true;
 
@@ -229,21 +221,15 @@ namespace Dizzy.Fixes
             if (!BoatCacheSpawnDelay.HeldThisSpawn)
                 return;
 
-            Traverse items = Traverse.Create(__instance);
-            if (!items.Field("itemsLoaded").FieldExists())
-            {
-                if (!BoatCacheSpawnDelay.NoteMissingItemsLoaded())
-                    Plugin.Log.LogWarning("DelayBoatCacheSpawn: itemsLoaded is missing; boat items may not retry.");
-                return;
-            }
-
-            items.Field("itemsLoaded").SetValue(false);
+            __instance.SetItemsLoaded(false);
         }
     }
 
     [HarmonyPatch(typeof(BoatLocalItems), "SpawnCachedItems")]
     internal static class BoatLocalItemsSpawnCachedItemsPatch
     {
+        private static readonly Func<BoatLocalItems, IEnumerator> SetGamestate = GameMembers.Method<Func<BoatLocalItems, IEnumerator>>(typeof(BoatLocalItems), "SetGamestate");
+
         private static bool Prefix(BoatLocalItems __instance)
         {
             if (BoatCacheSpawnDelay.DeferCrates(__instance))
@@ -255,8 +241,7 @@ namespace Dizzy.Fixes
             if (!BoatCacheSpawn.Enabled())
                 return true;
 
-            Traverse items = Traverse.Create(__instance);
-            if (!items.Field("cachedItems").FieldExists())
+            if (BoatCacheSpawn.CachedItems == null)
             {
                 if (!BoatCacheSpawn.LoggedMissingField)
                 {
@@ -267,13 +252,13 @@ namespace Dizzy.Fixes
                 return true;
             }
 
-            List<SavePrefabData> cached = items.Field("cachedItems").GetValue<List<SavePrefabData>>();
+            List<SavePrefabData> cached = BoatCacheSpawn.CachedItems(__instance);
             GameState.loadingBoatLocalItems = true;
 
             if (cached == null)
             {
                 Plugin.Log.LogWarning("PreventBoatCacheSpawnLoop: SpawnCachedItems with null cache on " + __instance.gameObject.name);
-                Finish(__instance, items);
+                Finish(__instance);
                 return false;
             }
 
@@ -325,18 +310,17 @@ namespace Dizzy.Fixes
                     + " (vanilla list count " + cached.Count + ").");
             }
 
-            Finish(__instance, items);
+            Finish(__instance);
             return false;
         }
 
-        private static void Finish(BoatLocalItems instance, Traverse items)
+        private static void Finish(BoatLocalItems instance)
         {
-            items.Field("cachedItems").SetValue(null);
+            BoatCacheSpawn.CachedItems(instance) = null;
 
-            Traverse setGamestate = items.Method("SetGamestate");
-            if (setGamestate.MethodExists())
+            if (SetGamestate != null)
             {
-                IEnumerator routine = setGamestate.GetValue<IEnumerator>();
+                IEnumerator routine = SetGamestate(instance);
                 if (routine != null)
                     instance.StartCoroutine(routine);
             }

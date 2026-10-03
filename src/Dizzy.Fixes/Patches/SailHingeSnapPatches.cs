@@ -112,10 +112,11 @@ namespace Dizzy.Fixes
             return sail;
         }
 
+        internal static readonly AccessTools.FieldRef<SailHingeAudio, float> LastVelocity = GameMembers.Field<SailHingeAudio, float>("lastVelocity");
+
         internal static void SyncLastVelocity(SailHingeAudio audio, Rigidbody sailBody)
         {
-            Traverse last = Traverse.Create(audio).Field("lastVelocity");
-            if (!last.FieldExists())
+            if (LastVelocity == null)
             {
                 if (!_loggedLastVelocity)
                 {
@@ -126,7 +127,7 @@ namespace Dizzy.Fixes
                 return;
             }
 
-            last.SetValue(sailBody.angularVelocity.magnitude);
+            LastVelocity(audio) = sailBody.angularVelocity.magnitude;
         }
     }
 
@@ -147,11 +148,10 @@ namespace Dizzy.Fixes
                 return false;
             }
 
-            Traverse last = Traverse.Create(__instance).Field("lastVelocity");
-            if (!last.FieldExists())
+            if (BogusSailSnap.LastVelocity == null)
                 return true;
 
-            float delta = Mathf.Abs(sailBody.angularVelocity.magnitude - last.GetValue<float>());
+            float delta = Mathf.Abs(sailBody.angularVelocity.magnitude - BogusSailSnap.LastVelocity(__instance));
             if (BogusSailSnap.IsTeleportDelta(delta, __instance.maxAccel))
             {
                 BogusSailSnap.SyncLastVelocity(__instance, sailBody);

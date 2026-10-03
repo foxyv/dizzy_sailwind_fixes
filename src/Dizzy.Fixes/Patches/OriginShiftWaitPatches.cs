@@ -11,6 +11,9 @@ namespace Dizzy.Fixes
     // post-teleport wake fade-in loop is empty too.
     internal static class OriginShiftWait
     {
+        private static readonly Action<FloatingOriginManager, int, int> Shift = GameMembers.Method<Action<FloatingOriginManager, int, int>>(typeof(FloatingOriginManager), "Shift", new[] { typeof(int), typeof(int) });
+        private static readonly AccessTools.FieldRef<FloatingOriginManager, bool> ShiftingSmoothly = GameMembers.Field<FloatingOriginManager, bool>("shiftingSmoothly");
+
         private static int _vanillaFrames = int.MinValue;
         private static bool _loggedMissing;
 
@@ -25,8 +28,7 @@ namespace Dizzy.Fixes
             if (manager == null)
                 return false;
 
-            Traverse t = Traverse.Create(manager);
-            if (!t.Method("Shift", new[] { typeof(int), typeof(int) }).MethodExists())
+            if (Shift == null)
             {
                 if (!_loggedMissing)
                 {
@@ -41,10 +43,10 @@ namespace Dizzy.Fixes
                 _vanillaFrames = manager.smoothShiftFrames;
             manager.smoothShiftFrames = 0;
 
-            if (t.Field("shiftingSmoothly").FieldExists())
-                t.Field("shiftingSmoothly").SetValue(true);
+            if (ShiftingSmoothly != null)
+                ShiftingSmoothly(manager) = true;
 
-            t.Method("Shift", new[] { typeof(int), typeof(int) }).GetValue(x, z);
+            Shift(manager, x, z);
             return true;
         }
     }

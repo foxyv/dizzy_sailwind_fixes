@@ -205,10 +205,11 @@ namespace Dizzy.Fixes
                 Plugin.Log.LogWarning("KeepMirageMountainMap: pruned " + removed + " destroyed save prefab(s) before save.");
         }
 
+        private static readonly AccessTools.FieldRef<WorldItemSpawner, ShipItem> SpawnerItem = GameMembers.Field<WorldItemSpawner, ShipItem>("item");
+
         internal static void ReleaseFromSpawner(WorldItemSpawner spawner)
         {
-            Traverse itemField = Traverse.Create(spawner).Field("item");
-            if (!itemField.FieldExists())
+            if (SpawnerItem == null)
             {
                 if (!_loggedSpawnerItem)
                 {
@@ -219,7 +220,7 @@ namespace Dizzy.Fixes
                 return;
             }
 
-            ShipItem item = itemField.GetValue<ShipItem>();
+            ShipItem item = SpawnerItem(spawner);
             if (item == null || item.held || !IsTarget(item))
                 return;
             if (TryInventorySlot(item) < 0)
@@ -256,7 +257,7 @@ namespace Dizzy.Fixes
                 body.debugForceKinematic = false;
 
             UnparentToWorld(item);
-            itemField.SetValue(null);
+            SpawnerItem(spawner) = null;
         }
     }
 
