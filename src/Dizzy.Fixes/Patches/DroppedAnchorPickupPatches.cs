@@ -203,6 +203,8 @@ namespace Dizzy.Fixes
         {
             if (!FixesConfig.PreferDroppedAnchorLook.Value)
                 return;
+            if (!LookRay.VanillaAims(__instance))
+                return;
             if (___heldItem != null)
                 return;
 

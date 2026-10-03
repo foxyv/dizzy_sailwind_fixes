@@ -21,6 +21,18 @@ namespace Dizzy.Fixes
         private static int _allCount;
         private static int _solidCount;
 
+        // Vanilla DoRaycast keeps the current target in a cursor menu (mouse
+        // crosshair) and clears it while sleeping, in bed or in the boat
+        // camera. The look fixes must not pick a target in any of those.
+        internal static bool VanillaAims(GoPointer pointer)
+        {
+            if (pointer == null)
+                return false;
+            if (pointer.type == GoPointer.PointerType.crosshairMouse && GameState.inCursorMenu)
+                return false;
+            return !GameState.sleeping && !GameState.inBed && !BoatCamera.on;
+        }
+
         internal static void Begin()
         {
             _inDoRaycast = true;

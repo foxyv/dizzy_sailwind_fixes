@@ -17,6 +17,16 @@ Copy this template for a new entry:
 
 ## Open
 
+### Allow using items from the third-person view (C) with co-op and player model mods
+
+- **Reported:** 2026-10-03
+- **Source:** Feature idea; vanilla behavior with the SailwindCoop and SailwindPlayerModel mods.
+- **Area:** look and aim / third-person camera
+- **Steps:** With SailwindCoop and SailwindPlayerModel installed, press C to switch to the third-person view and try to use or pick up an item.
+- **Expected:** Possibly allow aiming and using items from that view, since those mods make it a real third-person player view, not just a boat-steering camera.
+- **Actual:** Items can't be targeted or used from that view.
+- **Notes:** C is vanilla `BoatCamera` (the `CameraMode` toggle `MuteCameraModeSound` also patches). Vanilla `GoPointer.DoRaycast` clears the target whenever `BoatCamera.on`, and since 0.3.2 the look fixes follow the same rule through `LookRay.VanillaAims`. Allowing use would mean letting `DoRaycast` aim while `BoatCamera.on` (likely only when SailwindPlayerModel is installed), casting from the right point (the player model's view, not the orbiting camera), and dropping the `BoatCamera.on` check from `VanillaAims` in the same case. Check how SailwindCoop and SailwindPlayerModel handle C before deciding.
+
 ### Container or barrel highlights while placing an item on it
 
 - **Reported:** 2026-10-03

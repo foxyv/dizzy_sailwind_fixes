@@ -91,7 +91,7 @@ namespace Dizzy.Fixes
             out float distance)
         {
             distance = 0f;
-            if (!VanillaLooks(pointer))
+            if (!LookRay.VanillaAims(pointer))
                 return null;
             if (BigCrateCarry.Enabled() && BigCrateCarry.IsDropOnlyCarry(held))
                 return null;
@@ -117,13 +117,6 @@ namespace Dizzy.Fixes
                 Mathf.Min(limit, MaxDistance),
                 held,
                 out distance);
-        }
-
-        private static bool VanillaLooks(GoPointer pointer)
-        {
-            if (pointer.type == GoPointer.PointerType.crosshairMouse && GameState.inCursorMenu)
-                return false;
-            return !GameState.sleeping && !GameState.inBed && !BoatCamera.on;
         }
 
         private static ShipItem OwnerOfChildCollider(Collider collider)

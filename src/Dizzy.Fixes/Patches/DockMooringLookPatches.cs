@@ -170,6 +170,8 @@ namespace Dizzy.Fixes
         {
             if (!FixesConfig.PreferMooredDockLineLook.Value)
                 return;
+            if (!LookRay.VanillaAims(__instance))
+                return;
             if (___heldItem != null)
                 return;
 

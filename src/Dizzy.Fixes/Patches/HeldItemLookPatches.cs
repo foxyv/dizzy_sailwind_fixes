@@ -161,6 +161,8 @@ namespace Dizzy.Fixes
             ref GoPointerButton ___pointedAtButton,
             ref float ___currentLookDistance)
         {
+            if (!LookRay.VanillaAims(__instance))
+                return;
             HeldItemLook.Kind kind = HeldItemLook.ActiveKind(___heldItem);
             if (kind == HeldItemLook.Kind.None)
                 return;

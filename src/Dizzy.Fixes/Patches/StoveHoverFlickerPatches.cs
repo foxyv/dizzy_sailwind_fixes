@@ -208,6 +208,11 @@ namespace Dizzy.Fixes
         {
             if (!FixesConfig.StabilizeStoveItemHover.Value)
                 return;
+            if (!LookRay.VanillaAims(__instance))
+            {
+                StoveHoverAim.ClearSticky();
+                return;
+            }
 
             if (___heldItem != null)
             {
