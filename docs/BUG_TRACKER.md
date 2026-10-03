@@ -20,11 +20,16 @@ Copy this template for a new entry:
 ### Player housing despawns all items when you go too far away
 
 - **Reported:** 2026-10-02
+- **Source:** Vanilla bug (also reported without mods), so a candidate for a new fix in this mod.
 - **Area:** save and load / player housing
-- **Steps:** Leave items in a player house, then travel far away from it.
+- **Steps:** Leave items in a player house, then sail more than 1 km away from it.
 - **Expected:** The items stay in the house and are there when you come back.
-- **Actual:** All items in the house despawn.
-- **Notes:** Not investigated yet. Open questions: does it happen at a set distance, do the items come back after a save and reload, and is it vanilla or caused by a mod? Vanilla parents an item to a house's save index when it enters the house (`ShipItem.EnterHouse`); compare with how boats cache their items out of range (`BoatLocalItems`), and check whether vanilla's out-of-range destroy also hits house items.
+- **Actual:** All items in the house despawn once you're past about 1 km, and a save and restart does not bring them back. The items are lost.
+- **Notes:** Not fixed yet.
+    - **How vanilla handles it:** houses use the same caching as boats (`BoatLocalItems` has a `houseParentIsland` field for them). Past 1000 m, `BoatHorizon` clears `closeToPlayer`, `BoatLocalItems` caches every item parented to the house, sets their save parent to -2, and `ShipItem.ProcessSaveable` destroys them. Back in range, `BoatLocalItems.Update` respawns the cache, but only once `IslandLoaded()` reports the house's island scene loaded. `SaveLoadManager` saves every cached list and loads them back into the house's cache, so a restart should restore the items.
+    - **Where to start:** reproduce in vanilla or with the mod and read Unity's `Player.log` for the house's `Caching out of range` and `spawning cached items` lines. They show whether the items were cached at all and whether the respawn ever ran.
+    - **Leads:** the island scene never reports loaded, so `IslandLoaded()` blocks the respawn; the house's old item objects aren't destroyed when cached (for example, inactive with the island), so the -2 parent leaves them half-saved; or the items are parented to island scenery instead of the house and unload with the island scene (as with the Mirage Mountain chart).
+    - **Our code:** `PreventBoatCacheSpawnLoop` (`BoatCacheSpawnPatches.cs`) replaces `SpawnCachedItems` and skips cached items whose instance ID is still registered (`AlreadySpawned`). It isn't the cause, since vanilla loses the items too, but a fix must keep that skip from dropping house items.
 
 ### Mooring throw distance is labeled feet but is meters
 
