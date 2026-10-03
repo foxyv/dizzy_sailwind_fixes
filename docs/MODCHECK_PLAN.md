@@ -7,7 +7,7 @@ Release 0.3.1 after step 4 (low-risk steps), and 0.3.2 after steps 5-7.
 ## Steps
 
 - [x] **0. Land pending work.** Playtest the shared look raycast (`LookRayPatches.cs`), then commit it with `docs/BUG_TRACKER.md` and this plan.
-- [ ] **1. Release tooling** (SW111 x2, SW106). `package-release.ps1` reads the version from `Plugin.cs` and always builds with `-p:DeployOnBuild=false`. Copying the DLL into the game folder after a build becomes opt-in. No gameplay change.
+- [x] **1. Release tooling** (SW111 x2, SW106). `package-release.ps1` reads the version from `Plugin.cs` and always builds with `-p:DeployOnBuild=false`. The csproj deploy target that copied the DLL into the game folder is removed. No gameplay change.
 - [ ] **2. Duplicate crate inventory** (SW605 x2, `CrateContentsSavePatches.cs:61`, `:188`). Vanilla `ShipItemCrate.OnLoad` checks its private `crateInventory` field, not `GetComponent`, so a `CrateInventory` added by the fix first leads to two. Set that field when the fix adds one. Test: open, reload and empty crates on a boat.
 - [ ] **3. Trade-book zone check** (SW608, `TradeBookFailedSalePatches.cs:101`). `OverlapBox` uses the world-aligned `col.bounds` with `Quaternion.identity`, so a rotated warehouse zone gets a box that reaches past it. Use the collider's rotated shape, or filter hits with `ClosestPoint`. Test: trade-book sales at a couple of ports.
 - [ ] **4. Per-frame scene search and allocation** (SW401, SW402). Find shopkeepers once per scene load instead of every frame while the sell UI is open (`MerchantSellUiPatches.cs:168`). Cache each item's `Outline` components in the big-crate outline code (`BigCrateCarryPatches.cs:67`). Test: merchant sell UI, carrying big crates.

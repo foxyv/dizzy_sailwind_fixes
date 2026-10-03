@@ -12,13 +12,13 @@ Compatible with [ModVersionChecker](https://github.com/bryon82/SailwindModVersio
 dotnet build src\Dizzy.Fixes\Dizzy.Fixes.csproj -c Release
 ```
 
-A successful build copies `Dizzy.Fixes.dll` to `BepInEx\plugins\Dizzy.Fixes\` in the Sailwind install (`D:\SteamLibrary\steamapps\common\Sailwind` by default). Override with:
+The build references the game's assemblies in the Sailwind install (`D:\SteamLibrary\steamapps\common\Sailwind` by default). Override with:
 
 ```powershell
 dotnet build src\Dizzy.Fixes\Dizzy.Fixes.csproj -c Release -p:SailwindDir=C:\path\to\Sailwind
 ```
 
-Skip deploy: `-p:DeployOnBuild=false`
+The build doesn't copy the DLL anywhere; the game folder stays vanilla. For playtesting, deploy the DLL into a Sailwind Mod Synchronizer ModPack.
 
 ## Fixes
 
@@ -74,6 +74,8 @@ Inspect game types in ILSpy against `Sailwind_Data\Managed\Assembly-CSharp.dll`.
 ```powershell
 .\scripts\package-release.ps1
 ```
+
+The script reads the version from `PluginVersion` in `Plugin.cs`, always does a fresh Release build, and checks that the built DLL has that version. It writes `dist\Dizzy.Fixes-<version>.zip` and release notes next to it.
 
 Install layout inside the zip:
 
