@@ -160,7 +160,7 @@ namespace Dizzy.Fixes
     }
 
     [HarmonyPatch(typeof(GoPointer), "DoRaycast")]
-    [HarmonyAfter("Dizzy.Fixes.StoveHoverFlickerPatch", "Dizzy.Fixes.OccupiedHookHoverPatch", "Dizzy.Fixes.DroppedAnchorLookPatch")]
+    [HarmonyPriority(Priority.Normal - 30)]
     internal static class DockMooringLookPatch
     {
         private static void Postfix(

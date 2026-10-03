@@ -4,7 +4,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>Dizzy.Fixes</AssemblyName>
     <Product>Dizzy Sailwind Fixes</Product>
-    <Version>0.2.12</Version>
+    <Version>0.2.82</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -29,6 +29,10 @@
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule">
       <HintPath>$(ManagedDir)\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Crest">
+      <HintPath>$(ManagedDir)\Crest.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

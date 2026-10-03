@@ -8,6 +8,8 @@ namespace Dizzy.Fixes
     // which dock mesh and DockPushCol steal (Gold Rock especially).
     // Towable-boat bollards are the same GPButtonDockMooring type on the
     // hull; snapping to those springs the boat to itself.
+    // The throw only considers free cleats inside a forward arc, and
+    // picks the one closest to where the player is facing.
     internal static class DockMooringSnap
     {
         internal static float Range
@@ -23,10 +25,35 @@ namespace Dizzy.Fixes
             }
         }
 
-        internal static GPButtonDockMooring NearestFree(PickupableBoatMooringRope rope)
+        internal static float ArcDegrees
+        {
+            get
+            {
+                float degrees = FixesConfig.RightClickNearestDockMooringArcDegrees != null
+                    ? FixesConfig.RightClickNearestDockMooringArcDegrees.Value
+                    : 10f;
+                if (degrees < 0.1f)
+                    degrees = 0.1f;
+                return degrees;
+            }
+        }
+
+        internal static GPButtonDockMooring AimedFree(PickupableBoatMooringRope rope, GoPointer pointer)
         {
             if (rope == null)
                 return null;
+
+            Transform aim = pointer != null ? pointer.transform : null;
+            if (aim == null && rope.held != null)
+                aim = rope.held.transform;
+            if (aim == null)
+                return null;
+
+            Vector3 forward = aim.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 0.0001f)
+                return null;
+            forward.Normalize();
 
             Vector3 from = rope.transform.position;
             Rigidbody boat = rope.GetBoatRigidbody();
@@ -36,7 +63,9 @@ namespace Dizzy.Fixes
 
             float range = Range;
             float maxSqr = range * range;
+            float halfArc = ArcDegrees * 0.5f;
             GPButtonDockMooring best = null;
+            float bestAngle = halfArc;
             float bestSqr = maxSqr;
             for (int i = 0; i < cleats.Length; i++)
             {
@@ -44,10 +73,25 @@ namespace Dizzy.Fixes
                 if (!IsFree(cleat) || IsOnSameBoat(cleat, boat))
                     continue;
 
-                float sqr = (cleat.transform.position - from).sqrMagnitude;
-                if (sqr > bestSqr)
+                Vector3 toRope = cleat.transform.position - from;
+                float sqr = toRope.sqrMagnitude;
+                if (sqr > maxSqr || sqr < 0.0001f)
                     continue;
 
+                Vector3 toPlayer = cleat.transform.position - aim.position;
+                toPlayer.y = 0f;
+                if (toPlayer.sqrMagnitude < 0.0001f)
+                    continue;
+
+                float angle = Vector3.Angle(forward, toPlayer);
+                if (angle > halfArc)
+                    continue;
+                if (angle > bestAngle)
+                    continue;
+                if (angle == bestAngle && sqr >= bestSqr)
+                    continue;
+
+                bestAngle = angle;
                 bestSqr = sqr;
                 best = cleat;
             }
@@ -92,11 +136,11 @@ namespace Dizzy.Fixes
             if (__instance.IsMoored())
                 return;
 
-            GPButtonDockMooring cleat = DockMooringSnap.NearestFree(__instance);
+            GoPointer pointer = activatingPointer != null ? activatingPointer : __instance.held;
+            GPButtonDockMooring cleat = DockMooringSnap.AimedFree(__instance, pointer);
             if (cleat == null)
                 return;
 
-            GoPointer pointer = activatingPointer != null ? activatingPointer : __instance.held;
             cleat.ThrowRope(__instance);
             __instance.OnDrop();
             if (pointer != null)

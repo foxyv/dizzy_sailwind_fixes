@@ -55,8 +55,9 @@ namespace Dizzy.Fixes
     [HarmonyPatch(typeof(Shipyard), nameof(Shipyard.ConfirmOrder))]
     internal static class ShipyardConfirmOrderCleaningPatch
     {
-        private static void Prefix(Shipyard __instance, GameObject ___currentShip, ref bool ___currentOrderIncludesCleaning)
+        private static void Prefix(Shipyard __instance, GameObject ___currentShip, ref bool ___currentOrderIncludesCleaning, out int __state)
         {
+            __state = PlayerGold.currency[__instance.region];
             if (!FixesConfig.SkipUncleanableHullCleaning.Value)
                 return;
             if (!___currentOrderIncludesCleaning || UncleanableBoat.CanClean(___currentShip))
@@ -66,12 +67,18 @@ namespace Dizzy.Fixes
             __instance.UpdateOrder();
         }
 
-        private static Exception Finalizer(Shipyard __instance, Exception __exception)
+        // Only recover once vanilla has charged the gold: past that point a
+        // throw would let DischargeShip → CancelOrder revert the paid work. An
+        // exception before the charge is left to propagate so the order is not
+        // committed for free.
+        private static Exception Finalizer(Shipyard __instance, Exception __exception, int __state)
         {
             if (!FixesConfig.SkipUncleanableHullCleaning.Value || __exception == null)
                 return __exception;
+            if (PlayerGold.currency[__instance.region] >= __state)
+                return __exception;
 
-            Plugin.Log.LogError($"Shipyard confirm hit {__exception.GetType().Name}: {__exception.Message}. Keeping applied modifications.");
+            Plugin.Log.LogError("Shipyard confirm failed after charging; keeping applied modifications. " + __exception);
             try
             {
                 Traverse.Create(__instance).Method("ResetOrder").GetValue();
@@ -79,7 +86,7 @@ namespace Dizzy.Fixes
             }
             catch (Exception resetError)
             {
-                Plugin.Log.LogError($"Could not snapshot shipyard order after confirm failure: {resetError.Message}");
+                Plugin.Log.LogError("Could not snapshot shipyard order after confirm failure: " + resetError);
             }
 
             return null;

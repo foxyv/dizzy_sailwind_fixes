@@ -306,8 +306,11 @@ namespace Dizzy.Fixes
             return !MirageMountainMap.ShouldSkipDestroy(__instance);
         }
 
-        private static void Postfix(ShipItem __instance)
+        private static void Postfix(ShipItem __instance, bool __runOriginal)
         {
+            // The prefix keeps a held or slotted map; its slot must stay too.
+            if (!__runOriginal)
+                return;
             if (!MirageMountainMap.Enabled())
                 return;
             if (!MirageMountainMap.IsTarget(__instance))
