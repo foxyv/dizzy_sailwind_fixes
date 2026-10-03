@@ -31,7 +31,6 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> PreferSittingItemLook;
         internal static ConfigEntry<bool> SkipOtherFoodWhileHolding;
         internal static ConfigEntry<bool> SkipOtherFirewoodWhileHolding;
-        internal static ConfigEntry<bool> PreferCrateInventorySlot;
         internal static ConfigEntry<bool> ReleaseDestroyedHeldItem;
         internal static ConfigEntry<bool> SkipSmoothOriginShift;
         internal static ConfigEntry<bool> KeepCrateContentsWithBoat;
@@ -191,25 +190,19 @@ namespace Dizzy.Fixes
                 "Fixes",
                 "PreferSittingItemLook",
                 true,
-                "Click a mug, pipe, or other small item sitting on a desk, crate, or deck even when the look ray hits that surface first. Vanilla keeps the first collider, so a settled or flush-placed item is often only selectable from the exposed side. A direct hit stays on that item. When several items are close, the one under the crosshair wins over a nearer neighbor.");
+                "Click a small item anywhere you can see it, including a mug handle, the quadrant arc, a compass rim, a kettle spout, or the pipe mouthpiece. In vanilla, aiming at those parts selects the table behind the item or nothing at all.");
 
             SkipOtherFoodWhileHolding = config.Bind(
                 "Fixes",
                 "SkipOtherFoodWhileHolding",
                 true,
-                "While holding food, the look ray skips other food on a shelf or drying rack so you can place what you're holding. Vanilla highlights those items, and the sitting-item look will grab a nearby apple, so the rack never stays targeted.");
+                "While holding food, the look ray skips other food on a shelf or drying rack so you can place what you're holding. Vanilla highlights those items, so the rack never stays targeted.");
 
             SkipOtherFirewoodWhileHolding = config.Bind(
                 "Fixes",
                 "SkipOtherFirewoodWhileHolding",
                 true,
                 "While holding a piece of firewood, the look ray skips other pieces so left click can set it down. Vanilla highlights the next piece, and a highlighted object blocks the drop.");
-
-            PreferCrateInventorySlot = config.Bind(
-                "Fixes",
-                "PreferCrateInventorySlot",
-                true,
-                "While a container's inventory is open, the grid blocks the look ray. The slot under the crosshair wins, including the corners between slot centers, so a click cannot place through the panel onto whatever is behind it.");
 
             ReleaseDestroyedHeldItem = config.Bind(
                 "Fixes",

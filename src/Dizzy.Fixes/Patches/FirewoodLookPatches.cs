@@ -4,8 +4,8 @@ using UnityEngine;
 namespace Dizzy.Fixes
 {
     // A highlighted object blocks the drop. Another piece of firewood is
-    // not something the held piece can be placed on, but the look ray and
-    // the sitting-item search still stop on it, so left click does nothing.
+    // not something the held piece can be placed on, but the look ray still
+    // stops on it, so left click does nothing.
     internal static class HeldFirewoodLook
     {
         private static readonly RaycastHit[] Hits = new RaycastHit[32];
