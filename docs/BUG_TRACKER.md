@@ -1,6 +1,6 @@
 # Bug Tracker
 
-Bugs to fix later. Add new entries at the top of **Open**, and move an entry to **Fixed** once its fix ships.
+Bugs to fix later. Add new entries at the top of **Open**, and move an entry to **Fixed** once its fix ships. **Watch list** holds known risks nobody has reported yet; check it when a new bug comes in.
 
 Copy this template for a new entry:
 
@@ -68,6 +68,17 @@ Copy this template for a new entry:
 - **Expected:** The crate's items stay in the crate's grid.
 - **Actual:** Items in the crate grid that overlap the stove are sometimes added to the stove.
 - **Notes:** Happens only sometimes. Not investigated yet.
+
+## Watch list
+
+### Look fixes can target things behind walls, decks or hulls
+
+- **Noted:** 2026-10-03 (modcheck SW501; plan step 7, marked won't fix)
+- **Area:** look and aim
+- **Possible symptoms:** a stove item, stove fuel, a lantern on a lamp hook, or a shelf or drying rack (while holding food or firewood) gets highlighted or clicked through a wall, deck, hull or terrain. It could also show up as the wrong target winning when something solid sits between you and it.
+- **Why it can happen:** the stove (`StoveHoverFlickerPatches.cs`), lamp hook (`OccupiedHookHoverPatches.cs`) and held food/firewood (`HeldItemLookPatches.cs`) look fixes walk every hit from `LookRay.Cast` and pick the best target by their own rules, without stopping at the nearest solid collider. Vanilla's look ray also skips layers 12 (OnlyPlayerCol+Paintable) and 19 (IgnoreSmallItems), so vanilla itself targets tables and stoves through walls on those layers. That part is vanilla and players don't mind it.
+- **Not affected:** the dropped anchor and mooring line fixes look through ground and dock mesh on purpose. `SittingItemLook` already only accepts items in front of vanilla's first hit.
+- **If a bug points here:** the dropped step 7 approach was a `LookRay.BehindBlocker(ray, distance)` check. It finds the nearest non-trigger hit with no `GoPointerButton` on it or its parents (walls, decks, hulls, terrain; items and furniture never block), then each fix skips targets more than 5 cm past it. That only covers walls on layers the look ray hits. Walls on layers 12 and 19 would need a second cast with those layers added, but not Player (11), BoatCapsule (13) or invis (16), which would block everything on a boat or at a dock. Consider making it an optional, off-by-default fix.
 
 ## Fixed
 
