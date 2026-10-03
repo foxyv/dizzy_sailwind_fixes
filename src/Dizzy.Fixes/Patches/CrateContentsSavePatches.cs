@@ -10,10 +10,41 @@ namespace Dizzy.Fixes
     // they look for the crate once, and the crate is still cached.
     internal static class CrateContentsSave
     {
+        private static readonly AccessTools.FieldRef<ShipItemCrate, CrateInventory> CrateInventoryField = CrateInventoryFieldRef();
+
         internal static bool Enabled()
         {
             return FixesConfig.KeepCrateContentsWithBoat != null
                 && FixesConfig.KeepCrateContentsWithBoat.Value;
+        }
+
+        // ShipItem.OnLoad runs a frame after the crate spawns, and
+        // ShipItemCrate.OnLoad adds a CrateInventory whenever its private
+        // crateInventory field is null, even if one is already attached.
+        // Reuse the attached one, and hand whichever we use to that field so
+        // OnLoad keeps it instead of adding a second.
+        internal static CrateInventory InventoryOf(SaveablePrefab crate)
+        {
+            CrateInventory inventory = crate.GetComponent<CrateInventory>();
+            if (inventory == null)
+                inventory = crate.gameObject.AddComponent<CrateInventory>();
+
+            ShipItemCrate shipCrate = crate.GetComponent<ShipItemCrate>();
+            if (shipCrate != null && CrateInventoryField != null && CrateInventoryField(shipCrate) == null)
+                CrateInventoryField(shipCrate) = inventory;
+            return inventory;
+        }
+
+        private static AccessTools.FieldRef<ShipItemCrate, CrateInventory> CrateInventoryFieldRef()
+        {
+            System.Reflection.FieldInfo field = AccessTools.Field(typeof(ShipItemCrate), "crateInventory");
+            if (field == null || field.FieldType != typeof(CrateInventory))
+            {
+                Plugin.Log.LogWarning("KeepCrateContentsWithBoat: ShipItemCrate.crateInventory not found; a refiled crate may get a second CrateInventory.");
+                return null;
+            }
+
+            return AccessTools.FieldRefAccess<ShipItemCrate, CrateInventory>(field);
         }
 
         internal static void CopyBoatParent(CrateInventory crate, ShipItem item)
@@ -56,10 +87,7 @@ namespace Dizzy.Fixes
                 SaveablePrefab crate = FindLiveCrate(saveable.currentCrateId);
                 if (crate != null)
                 {
-                    CrateInventory inventory = crate.GetComponent<CrateInventory>();
-                    if (inventory == null)
-                        inventory = crate.gameObject.AddComponent<CrateInventory>();
-                    inventory.InsertItem(item);
+                    CrateContentsSave.InventoryOf(crate).InsertItem(item);
                     inserted++;
                     continue;
                 }
@@ -183,10 +211,7 @@ namespace Dizzy.Fixes
                     if (prefab.GetComponent<ShipItemCrate>() == null && prefab.GetComponent<CrateInventory>() == null)
                         continue;
 
-                    CrateInventory inventory = prefab.GetComponent<CrateInventory>();
-                    if (inventory == null)
-                        inventory = prefab.gameObject.AddComponent<CrateInventory>();
-                    inventory.InsertItem(item);
+                    CrateContentsSave.InventoryOf(prefab).InsertItem(item);
                     return;
                 }
             }
