@@ -18,7 +18,7 @@ Release 0.3.1 after step 4 (low-risk steps), and 0.3.2 after steps 5-7.
     - [x] **5c. World and physics:** `BoatCacheSpawnPatches`, `OriginShiftWaitPatches`, `SailHingeSnapPatches`, `MirageMountainMapPatches`.
 - [x] **6. Look fixes in menus, sleep and third-person camera** (SW502 x6). Decompile vanilla `GoPointer.DoRaycast` and add one shared guard so the look fixes skip whenever vanilla doesn't aim. Leave the roll fix running during sleep, since keeping items settled after sleep is part of its job.
 - [x] **7. Stop at the nearest wall** (SW501): **won't fix.** Vanilla's own look ray skips the layers many walls are on (12 OnlyPlayerCol+Paintable, 19 IgnoreSmallItems), so vanilla already targets tables and stoves through walls, and players don't mind placing through walls. Blocking only the walls the look ray hits would change three look fixes for little gain. Could return later as an optional, off-by-default fix.
-- [ ] **Release 0.3.2.**
+- [x] **Release 0.3.2.**
 - [ ] **8. Review only** (SW206 x2, trade-book SW601). Decide whether compass, fishing rod, scroll, spyglass and mooring rope need pipe-style scroll handling, and whether lights matter for the Mirage map pickup patch. Confirm `WarehouseSync.Validate` covers everything vanilla `ValidateList` does. Record the decision or patch it.
 
 ## Not planned
