@@ -1,3 +1,4 @@
+using System;
 using HarmonyLib;
 using UnityEngine;
 
@@ -6,6 +7,10 @@ namespace Dizzy.Fixes
     internal static class InventorySipGuard
     {
         private const float GraceSeconds = 1f;
+
+        private static readonly AccessTools.FieldRef<ShipItemBottle, bool> BottleIsDrinking = GameMembers.Field<ShipItemBottle, bool>("drinking");
+        private static readonly AccessTools.FieldRef<ShipItemSoup, bool> SoupIsDrinking = GameMembers.Field<ShipItemSoup, bool>("drinking");
+        private static readonly Func<GoPointer, bool> AltButtonHeld = GameMembers.Method<Func<GoPointer, bool>>(typeof(GoPointer), "AltButtonHeld");
 
         private static ShipItem _item;
         private static float _until;
@@ -47,7 +52,7 @@ namespace Dizzy.Fixes
             {
                 if (bottle.IsDrinking())
                     return true;
-                if (Traverse.Create(bottle).Field("drinking").GetValue<bool>())
+                if (BottleIsDrinking != null && BottleIsDrinking(bottle))
                     return true;
                 return AltHeld(bottle.held);
             }
@@ -55,7 +60,7 @@ namespace Dizzy.Fixes
             ShipItemSoup soup = component.GetComponent<ShipItemSoup>();
             if (soup != null)
             {
-                if (Traverse.Create(soup).Field("drinking").GetValue<bool>())
+                if (SoupIsDrinking != null && SoupIsDrinking(soup))
                     return true;
                 return AltHeld(soup.held);
             }
@@ -65,10 +70,7 @@ namespace Dizzy.Fixes
 
         private static bool AltHeld(GoPointer pointer)
         {
-            if (pointer == null)
-                return false;
-
-            return Traverse.Create(pointer).Method("AltButtonHeld").GetValue<bool>();
+            return pointer != null && AltButtonHeld != null && AltButtonHeld(pointer);
         }
     }
 

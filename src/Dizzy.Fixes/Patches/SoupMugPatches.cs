@@ -21,6 +21,7 @@ namespace Dizzy.Fixes
 
         private static readonly Dictionary<int, Contents> ByPrefabId = new Dictionary<int, Contents>();
         private static readonly Dictionary<int, Contents> ByMug = new Dictionary<int, Contents>();
+        private static readonly Action<Mug> MugSpill = GameMembers.Method<Action<Mug>>(typeof(Mug), "Spill");
 
         internal sealed class Contents
         {
@@ -173,9 +174,8 @@ namespace Dizzy.Fixes
                 return;
             }
 
-            Traverse spill = Traverse.Create(mug).Method("Spill");
-            if (spill.MethodExists())
-                spill.GetValue();
+            if (MugSpill != null)
+                MugSpill(mug);
         }
 
         private static float SpillUprightThreshold(float level)

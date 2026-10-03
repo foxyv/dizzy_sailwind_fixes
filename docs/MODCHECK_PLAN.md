@@ -14,7 +14,7 @@ Release 0.3.1 after step 4 (low-risk steps), and 0.3.2 after steps 5-7.
 - [x] **Release 0.3.1.**
 - [ ] **5. Per-frame reflection** (SW403 x20). Replace `Traverse.Create` with `AccessTools.FieldRefAccess` and cached method delegates. No behavior change. Three commits:
     - [x] **5a. Look and UI:** `LookTextSmokePatches`, `SoupMugPatches` (look-text prompt), `MerchantSellUiPatches`, `HideInventoryOnNeedsWarningPatches`.
-    - [ ] **5b. Held items:** `InventoryWithdrawSipPatches`, `ItemPlaceAlignPatches`, `SoupMugPatches` (spill).
+    - [x] **5b. Held items:** `InventoryWithdrawSipPatches`, `ItemPlaceAlignPatches`, `SoupMugPatches` (spill).
     - [ ] **5c. World and physics:** `BoatCacheSpawnPatches`, `OriginShiftWaitPatches`, `SailHingeSnapPatches`, `MirageMountainMapPatches`.
 - [ ] **6. Look fixes in menus, sleep and third-person camera** (SW502 x6). Decompile vanilla `GoPointer.DoRaycast` and add one shared guard so the look fixes skip whenever vanilla doesn't aim. Leave the roll fix running during sleep, since keeping items settled after sleep is part of its job.
 - [ ] **7. Stop at the nearest wall** (SW501, `LookRayPatches.cs`). `LookRay` records the nearest solid hit; the stove, hook and held-item fixes ignore anything past it. The anchor and mooring fixes keep looking through ground and dock mesh on purpose. Biggest behavior change: longest playtest.

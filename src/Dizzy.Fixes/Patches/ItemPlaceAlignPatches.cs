@@ -180,16 +180,19 @@ namespace Dizzy.Fixes
             heldItem.forceDisableRedOutline = true;
         }
 
+        private static readonly AccessTools.FieldRef<GoPointer, GoPointerButton> PointedAtButton = GameMembers.Field<GoPointer, GoPointerButton>("pointedAtButton");
+        private static readonly AccessTools.FieldRef<GoPointer, RaycastHit> PointerHit = GameMembers.Field<GoPointer, RaycastHit>("hit");
+        private static readonly AccessTools.FieldRef<ShipItemQuadrant, bool> QuadrantInspecting = GameMembers.Field<ShipItemQuadrant, bool>("inspecting");
+        private static readonly AccessTools.FieldRef<ShipItemQuadrant, bool> QuadrantRotating = GameMembers.Field<ShipItemQuadrant, bool>("rotating");
+        private static readonly AccessTools.FieldRef<ShipItemQuadrant, Transform> QuadrantRotatingParent = GameMembers.Field<ShipItemQuadrant, Transform>("rotatingParent");
+        private static readonly AccessTools.FieldRef<ShipItemQuadrant, Quaternion> QuadrantInitialRot = GameMembers.Field<ShipItemQuadrant, Quaternion>("initialRot");
+
         internal static bool IsPlacing(PickupableItem item)
         {
-            if (item == null || item.held == null)
+            if (item == null || item.held == null || PointedAtButton == null)
                 return false;
 
-            Traverse pointed = Traverse.Create(item.held).Field("pointedAtButton");
-            if (!pointed.FieldExists())
-                return false;
-
-            GoPointerButton button = pointed.GetValue<GoPointerButton>();
+            GoPointerButton button = PointedAtButton(item.held);
             return button != null && button.allowPlacingItems;
         }
 
@@ -221,22 +224,16 @@ namespace Dizzy.Fixes
         {
             if (quadrant == null)
                 return;
-
-            Traverse t = Traverse.Create(quadrant);
-            Traverse inspecting = t.Field("inspecting");
-            Traverse rotating = t.Field("rotating");
-            Traverse parent = t.Field("rotatingParent");
-            Traverse initial = t.Field("initialRot");
-            if (!inspecting.FieldExists() || !parent.FieldExists() || !initial.FieldExists())
+            if (QuadrantInspecting == null || QuadrantRotatingParent == null || QuadrantInitialRot == null)
                 return;
 
-            inspecting.SetValue(false);
-            if (rotating.FieldExists())
-                rotating.SetValue(false);
+            QuadrantInspecting(quadrant) = false;
+            if (QuadrantRotating != null)
+                QuadrantRotating(quadrant) = false;
 
-            Transform rotatingParent = parent.GetValue<Transform>();
+            Transform rotatingParent = QuadrantRotatingParent(quadrant);
             if (rotatingParent != null)
-                rotatingParent.localRotation = initial.GetValue<Quaternion>();
+                rotatingParent.localRotation = QuadrantInitialRot(quadrant);
         }
 
         internal static void AddPipeYaw(PickupableItem item, float input)
@@ -286,13 +283,10 @@ namespace Dizzy.Fixes
             if (held == null)
                 return;
 
-            Traverse t = Traverse.Create(pointer);
-            Traverse pointed = t.Field("pointedAtButton");
-            Traverse hitField = t.Field("hit");
-            if (!pointed.FieldExists() || !hitField.FieldExists())
+            if (PointedAtButton == null || PointerHit == null)
                 return;
 
-            Apply(held, pointed.GetValue<GoPointerButton>(), hitField.GetValue<RaycastHit>());
+            Apply(held, PointedAtButton(pointer), PointerHit(pointer));
         }
     }
 

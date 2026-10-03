@@ -17,6 +17,16 @@ Copy this template for a new entry:
 
 ## Open
 
+### Container or barrel highlights while placing an item on it
+
+- **Reported:** 2026-10-03
+- **Source:** Vanilla behavior; not caused by `AlignPlacedItemToSurface`.
+- **Area:** look and aim / item placement
+- **Steps:** Hold a pipe or quadrant (or any placeable item) over a crate, container or barrel to set it down.
+- **Expected:** Only the placement preview shows; the surface you're placing onto doesn't light up.
+- **Actual:** The container or barrel shows its look highlight the whole time you're placing.
+- **Notes:** Vanilla keeps calling `Look()` on the surface while you hold an item over it (`GoPointer.DoRaycast`), and its place preview (`GoPointer.LateUpdate`) depends on that surface staying `pointedAtButton`, so `GoPointerButton.UpdateColor` draws the looked-at outline. Tables have no visible outline, so it only shows on items like crates and barrels. A fix would have to hide the outline without clearing `pointedAtButton`, e.g. a prefix on `UpdateColor` for the placement target (see how `DropBigCrateOutlinePatch` suppresses outlines). Decide first whether it applies only to pipes and quadrants or to every placed item.
+
 ### Player housing despawns all items when you go too far away
 
 - **Reported:** 2026-10-02
