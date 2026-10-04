@@ -46,20 +46,6 @@ Copy this template for a new entry:
 - **Actual:** The container or barrel shows its look highlight the whole time you're placing.
 - **Notes:** Vanilla keeps calling `Look()` on the surface while you hold an item over it (`GoPointer.DoRaycast`), and its place preview (`GoPointer.LateUpdate`) depends on that surface staying `pointedAtButton`, so `GoPointerButton.UpdateColor` draws the looked-at outline. Tables have no visible outline, so it only shows on items like crates and barrels. A fix would have to hide the outline without clearing `pointedAtButton`, e.g. a prefix on `UpdateColor` for the placement target (see how `DropBigCrateOutlinePatch` suppresses outlines). Decide first whether it applies only to pipes and quadrants or to every placed item.
 
-### Player housing despawns all items when you go too far away
-
-- **Reported:** 2026-10-02
-- **Source:** Vanilla bug (also reported without mods), so a candidate for a new fix in this mod.
-- **Area:** save and load / player housing
-- **Steps:** Leave items in a player house, then sail more than 1 km away from it.
-- **Expected:** The items stay in the house and are there when you come back.
-- **Actual:** All items in the house despawn once you're past about 1 km, and a save and restart does not bring them back. The items are lost.
-- **Notes:** Not fixed yet.
-    - **How vanilla handles it:** houses use the same caching as boats (`BoatLocalItems` has a `houseParentIsland` field for them). Past 1000 m, `BoatHorizon` clears `closeToPlayer`, `BoatLocalItems` caches every item parented to the house, sets their save parent to -2, and `ShipItem.ProcessSaveable` destroys them. Back in range, `BoatLocalItems.Update` respawns the cache, but only once `IslandLoaded()` reports the house's island scene loaded. `SaveLoadManager` saves every cached list and loads them back into the house's cache, so a restart should restore the items.
-    - **Where to start:** reproduce in vanilla or with the mod and read Unity's `Player.log` for the house's `Caching out of range` and `spawning cached items` lines. They show whether the items were cached at all and whether the respawn ever ran.
-    - **Leads:** the island scene never reports loaded, so `IslandLoaded()` blocks the respawn; the house's old item objects aren't destroyed when cached (for example, inactive with the island), so the -2 parent leaves them half-saved; or the items are parented to island scenery instead of the house and unload with the island scene (as with the Mirage Mountain chart).
-    - **Our code:** `PreventBoatCacheSpawnLoop` (`BoatCacheSpawnPatches.cs`) replaces `SpawnCachedItems` and skips cached items whose instance ID is still registered (`AlreadySpawned`). It isn't the cause, since vanilla loses the items too, but a fix must keep that skip from dropping house items.
-
 ### Mooring throw distance is labeled feet but is meters
 
 - **Reported:** 2026-10-02
@@ -99,4 +85,16 @@ Copy this template for a new entry:
 
 ## Fixed
 
-None yet.
+### Player housing despawns all items when you go too far away
+
+- **Reported:** 2026-10-02
+- **Fixed:** 2026-10-03 in 0.3.3 (`KeepHouseItemsWhenAway`, `HouseItemsPatches.cs`)
+- **Source:** Vanilla bug (also happens without mods).
+- **Area:** save and load / player housing
+- **Steps:** Leave items in a player house, then sail away from it. A save and reload near the house does not trigger it.
+- **Actual (before the fix):** All items in the house are gone when you come back, and a save and reload does not bring them back.
+- **Cause:** `ItemRigidbody.FixedUpdate` checks each item's distance from the camera every 5-8 s and destroys any sold item more than 600 m away that is not on a boat walk collider (`currentWalkCol == null`), logging "is out of range and not on boat, destroying!". House items are never on a walk collider, so they were deleted at 600 m, before the house's own `BoatLocalItems` could cache them at 1000 m. The six houses ("house trigger (201)" to "(206)" in `level24`) each have a `BoatLocalItems` and `BoatHorizon` like a boat.
+- **Fix:** a prefix on `ItemRigidbody.FixedUpdate` keeps `framesUntilDestroy` at 0 for sold items whose save parent is a saveable object (index > 0) and that are not on a walk collider, so vanilla only freezes them while out of range. Past 1000 m the house or boat caches them as usual.
+- **Also found:** the same 600 m destroy hit items that belong to a boat but aren't on its walk collider (14 items on the small dhow in the test, including a table, lantern, barrel and oar). The fix keeps those too, and the boat then caches them at 1000 m.
+- **Verified:** playtest on the Dizzy Sept 2026 pack, 0.3.3: items in house 201 stayed after sailing 1+ km away and back, and after a save and reload while away. The BepInEx log showed 35 house items and 14 dhow items kept.
+

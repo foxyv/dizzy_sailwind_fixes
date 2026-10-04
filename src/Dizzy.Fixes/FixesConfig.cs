@@ -36,6 +36,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> KeepCrateContentsWithBoat;
         internal static ConfigEntry<bool> DropBigCratePastOtherCrates;
         internal static ConfigEntry<bool> KeepMissionListPage;
+        internal static ConfigEntry<bool> KeepHouseItemsWhenAway;
         internal static ConfigEntry<bool> DelayBoatCacheSpawn;
 
         internal static void Bind(ConfigFile config)
@@ -233,6 +234,12 @@ namespace Dizzy.Fixes
                 "KeepMissionListPage",
                 true,
                 "Accepting a port mission keeps the mission list on the current page. The accepted mission drops out and later missions shift into that page. Vanilla reloads page 1 while the page number stays where it was.");
+
+            KeepHouseItemsWhenAway = config.Bind(
+                "Fixes",
+                "KeepHouseItemsWhenAway",
+                true,
+                "Items you leave in a player house are still there when you come back. Vanilla deletes them for good once you sail about 600 m away.");
 
             DelayBoatCacheSpawn = config.Bind(
                 "Debug",

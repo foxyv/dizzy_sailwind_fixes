@@ -23,12 +23,13 @@ Release 0.3.1 after step 4 (low-risk steps), and 0.3.2 after steps 5-7.
 
 ## Handled or by design
 
-All 15 remaining warnings are handled or by design; modcheck can't tell.
+All 16 remaining warnings are handled or by design; modcheck can't tell.
 
 | Rule | Where | Why it stays |
 | --- | --- | --- |
 | SW605 | `CrateContentsSavePatches.cs` | `InventoryOf` reuses an existing `CrateInventory` and hands the one it adds to `ShipItemCrate.crateInventory`, so vanilla `OnLoad` keeps it. modcheck flags any `AddComponent<CrateInventory>`. |
 | SW402 | `BigCrateCarryPatches.cs` | `SuppressOutline` fills a reused list, so it allocates nothing; a per-button cache would miss outlines Dizzy.FirewoodBundle adds to bundle logs. modcheck flags any `GetComponentsInChildren` per frame. |
+| SW502 | `HouseItemsPatches.cs` | Added in 0.3.3. Vanilla's 600 m destroy countdown ignores sleep, so the reset that keeps house items must ignore it too. |
 | SW502 | `ItemRollPatches.cs` | Vanilla freezes items while sleeping; the roll fix keeping an already-frozen capsule frozen afterward is how items stay settled after sleep. |
 | SW501 | `LookRayPatches.cs` | Won't fix (step 7): the look fixes follow vanilla, which also targets through walls. `Cast` is a shared cache; each fix checks distance itself. |
 | SW206 | `ItemPlaceAlignPatches.cs` | The pipe scroll patch only acts on `ShipItemPipe`; the five types that skip it (mooring rope, compass, fishing rod, scroll, spyglass) aren't pipes. |
@@ -38,4 +39,4 @@ All 15 remaining warnings are handled or by design; modcheck can't tell.
 | SW603 | `SoupMugPatches.cs` | Mug destroy keeps saved soup when the boat unloads or sinks the mug. |
 | SW606 | `UncleanableHullCleaningPatches.cs` | Finalizer swallows only after gold was charged, on purpose. |
 | SW601 | `MirageMountainMapPatches.cs` | Skipping `DestroyItem` protects a held or slotted map; the slot bug is fixed. |
-| SW801 x4 | FirewoodBundle, Nudge, Calendar overlaps | FirewoodBundle and Nudge are safe; Dizzy.Calendar is retired and never deployed. |
+| SW801 x4 | FirewoodBundle, Nudge, Calendar overlaps | FirewoodBundle and Nudge are safe; Dizzy.Calendar is retired and never deployed (its `ItemRigidbody.FixedUpdate` overlap is now reported on `HouseItemsPatches.cs`). |
