@@ -21,16 +21,19 @@ Source: decompile (`FloatingOriginManager`, `Sun`), data (`Sun` in `level24`).
 | 1 game day | 3,000 real seconds (50 min) | `Sun.GetRealtimeDayLength()` = `24 / timescale` |
 | Time-skip sleep | 9x speed | `Sun.Update`: `Sleep.timeskipSleep` → `timescale = initialTimescale * 9` |
 | 1 in-game knot | 1.2 m/s (about 2.33 real knots) | 150 m per 125 s |
+| Chip log knot | 1 real knot = 0.514 m/s | The chip log dial reads real-world knots (see Chip log below), so it shows about 2.3x the in-game knots (nautical miles per game hour) |
 
 - **Local time:** `localTime = globalTime + x / 15`, so each degree of longitude is 4 minutes, as in reality. `globalTime` past 24 increments `GameState.day`, calls `DayLogs.instance.NewDaySheets()` and fires `Sun.OnNewDay`.
 - **Dawn:** `dawnBorder = -0.147 * z + 10.853`, clamped to [6.16, 6.8], when `dawnBorderFromLatitude` is on.
-- **`Speedometer`** (debug display) shows `velocity * 1.944` "knots" and `* 3.6` km/h, which are real-world units in world units per real second, not in-game knots.
+- **Time scale is fixed:** only the editor-only `Debugger` keys (Keypad 7: x1, Keypad 9: x100) change `Sun.initialTimescale`; no game setting does.
+- **Earth curvature:** `IslandHorizon.ApplyNewHorizon` drops islands by `d^2 / (2 * 515662)`, so the horizon uses a radius of about 516 km.
+- **`Speedometer`** shows `velocity * 1.944` "knots" and `* 3.6` km/h, real-world units of world units per real second. It's part of the hidden build debug mode: hold P+N and press T (`Debugger.buildDebugModeOn`), which also turns on god mode and works in normal builds. Speedometers sit on a few boats and test objects in `level24`.
 
 ## Floating origin
 
 Source: decompile (`FloatingOriginManager`).
 
-- **When it shifts:** when the shifter object passes `shiftDistance` from the origin on x or z, the world moves back by one `shiftDistance` step. `shiftDistance` is a scene value; our `SkipSmoothOriginShift` comment says 512 m (not re-verified this session).
+- **When it shifts:** when the shifter object passes `shiftDistance` (**512 m**, read from `level24`) from the origin on x or z, the world moves back by one `shiftDistance` step.
 - **Smooth shift:** `ShiftSmoothly(x, z)` fades boat wakes over `smoothShiftFrames` (50) fixed updates with `GameState.waitingForShift` set, then calls private `Shift(int x, int z)`. The wait is the 1-2 s freeze the fix removes.
 - **Shift itself:** `Shift` starts `NewShift`, which calls `PrepareForShifting` / `RestoreMomentum` on registered `ShiftingRigidbody`s. Private field `shiftingSmoothly` guards re-entry.
 - **Offset:** `outCurrentOffset` holds the accumulated shift; save positions subtract it.
@@ -40,6 +43,7 @@ Source: decompile (`FloatingOriginManager`).
 Source: decompile (`GoPointer.DoRaycast`, `GoPointerButton`), data (layer names from `TagManager` in `globalgamemanagers`).
 
 - **Look ray:** `Physics.Raycast(ray, out hit, 1.8f, -604165)`, with the global trigger setting. The ray is `raycastRay`, or the mouse ray when `debugEditorPointer` is set. **F3** logs the hit collider's name.
+- **Triggers count:** `Physics.queriesHitTriggers` is **true** (`PhysicsManager` in `globalgamemanagers`), so the look ray stops on trigger colliders too, e.g. a stove's big trigger box.
 - **When vanilla doesn't aim:**
   - With a mouse crosshair pointer (`PointerType.crosshairMouse`) in a cursor menu (`GameState.inCursorMenu`), `DoRaycast` returns early and **keeps** the current target.
   - While `GameState.sleeping`, `GameState.inBed` or `BoatCamera.on`, it **clears** the target.
@@ -57,21 +61,21 @@ Source: decompile (`GoPointer.DoRaycast`, `GoPointerButton`), data (layer names 
 | --- | --- | --- |
 | 0 | Default | hits |
 | 1 | TransparentFX | hits |
-| 2 | Ignore Raycast | **skipped** |
+| 2 | Ignore Raycast | **skipped** (1,044 colliders: NPCs, shopkeepers, cook and inn triggers, embark colliders, carts, and 18 solid boat `hull` colliders) |
 | 4 | Water | hits |
 | 5 | UI | hits |
 | 8 | WalkCols | hits |
 | 9 | Clouds1 | hits |
 | 10 | Clouds2 | hits |
-| 11 | Player | **skipped** |
-| 12 | OnlyPlayerCol+Paintable | **skipped** (many walls; vanilla targets through them) |
-| 13 | BoatCapsule | **skipped** |
+| 11 | Player | **skipped** (the player's embarker triggers) |
+| 12 | OnlyPlayerCol+Paintable | **skipped** (only 5 in the data; at runtime boats carry a solid `hull player collider` here, so vanilla targets stoves and tables through a boat's hull) |
+| 13 | BoatCapsule | **skipped** (one solid capsule per boat, 8 in `level24`) |
 | 14 | TerrainDepth | hits |
 | 15 | Painter | hits |
-| 16 | invis | **skipped** (invisible helper colliders, e.g. the boat-push collider at docks) |
+| 16 | invis | **skipped** (no colliders in the data; hotbar items are moved here at runtime) |
 | 17 | NoPlayerLight | hits |
 | 18 | SmallItems | hits |
-| 19 | IgnoreSmallItems | **skipped** |
+| 19 | IgnoreSmallItems | **skipped** (no colliders in the data) |
 | 20 | ShipItemSubcollider | hits |
 | 21 | SailColChecker | hits |
 | 22 | FloatingHints | hits |
@@ -117,6 +121,7 @@ Source: decompile (`SaveablePrefab`, `ShipItem`, `ItemRigidbody`, `SaveLoadManag
 - **Disembark:** `ExitBoat` runs once the item has left the embark collider for a few frames, unless sleeping, `disallowDisembarking` or `attached`. It doesn't need the item to be held, so trash thrown or dropped off a boat becomes a loose world item (-1). `OnEnterInventory` also calls `ExitBoat`.
 - **House enter:** `OnTriggerEnter` with a collider tagged `House` calls `EnterHouse`, which sets the parent to the house's `sceneIndex` and the transform parent to the house.
 - **House exit:** `ExitHouse` only clears the parent when the item is **held**. An item thrown, knocked or rolled out keeps the house as its parent.
+- **Hotbar items keep the house:** `OnEnterInventory` only calls `ExitBoat()`, so an item put in the hotbar inside a house keeps the house as its parent. When the house caches at 1000 m it takes those hotbar items too; they return to their slots when it respawns (bug tracker).
 - **`PlayerHouseEmbarker`:** sets `GameState.currentHouse` while the player is inside a `House` trigger.
 
 ### Range destroy (`ItemRigidbody.FixedUpdate`)
@@ -139,6 +144,7 @@ Source: decompile (`SaveablePrefab`, `ShipItem`, `ItemRigidbody`, `SaveLoadManag
 - **Sinking does nothing:** `UpdateHorizonPos` calls `SetHeight`, whose body is empty, so boats and houses don't actually sink. `UpdateKinematic` makes the boat rigidbody kinematic when far, in a shipyard, loading, recovering and similar.
 - **Registration:** `BoatHorizon.Awake` registers with a `BoatLocalItems` on its parent or itself.
 - **Caching:** `BoatLocalItems.Update` caches when `!closeToPlayer && itemsLoaded && cache empty`. `CacheCurrentItems(-2)` stores `PrepareSaveData()` for every prefab whose parent is this `sceneIndex` and marks it -2, and the item then destroys itself.
+- **`itemsLoaded`:** starts false in the scene. Only `SpawnCachedItems` (and `BoatDamage.LoadDamage` for a sunk boat) sets it true; `SaveableObject.Load` on a boat and `Recovery` set it false. So a boat or house never caches until it has respawned from a cache once, normally after the first reload with items on it.
 - **Respawning:** when `closeToPlayer && IslandLoaded() && !itemsLoaded && cachedItems != null` and the rigidbody is null or kinematic, it calls `SpawnCachedItems` and sets `itemsLoaded`.
   - `IslandLoaded()` is true when `houseParentIsland <= 0`, otherwise when that scene build index is loaded.
 - **Bookkeeping:** `SpawnCachedItems` instantiates each prefab, calls `Load`, clears the cache and runs the private `SetGamestate()` coroutine, which clears `GameState.loadingBoatLocalItems` after 2 frames plus 2 fixed updates.
@@ -161,6 +167,8 @@ Source: data.
 
 The number in each name is its `sceneIndex`. `Sun` also lives in `level24`.
 
+In-game names: "BOAT dhow medium (20)" is the **Sanbuq** (confirmed in play). The others are unconfirmed; "dhow small (10)" is probably the Dhow.
+
 ## Crates
 
 Source: decompile (`ShipItemCrate`, `CrateInventory`).
@@ -180,6 +188,7 @@ Source: decompile (`IslandMarketWarehouseArea`, `EconomyUI`, `Shopkeeper`, `BuyI
 - **`ValidateList`** only removes invalid goods. It never prunes destroyed goods (calling `IsGoodValid` on one throws) and never adds goods the trigger missed. Its only caller is `SellGood`.
 - **The sale bug:** `EconomyUI.SellGood` bumps market supply and pays gold **before** `IslandMarketWarehouseArea.SellGood` tries to destroy a good, so a failed warehouse sale ("Failed to sell - crate/barrel not full") still moved the price (`PreventFailedTradeBookSale`).
 - **Unreliable exits:** Unity doesn't fire `OnTriggerExit` when a collider is disabled, so trigger lists can go stale.
+- **Carried goods:** carrying a good out of the yard fires `OnTriggerExit` (`held=True`) and `RemoveGood`; carrying it back in fires `OnTriggerEnter` and `AddGood`. `OnTriggerEnter` never checks `held`, so a crate you're carrying counts as stock while you're inside the yard (probe, Gold Rock).
 - **Shopkeepers:** they live in island scenes and have a private `Start`. `BuyItemUI` private fields: `playerIsSelling` (`bool`), `activeShopkeeper` (`Shopkeeper`). Vanilla won't open a second merchant while `activeItem` is set.
 
 ## Shipyard
@@ -200,14 +209,16 @@ Source: decompile (`Shipyard`).
 
 Source: decompile unless noted.
 
-- **Chip log:** `ChipLogRopeEnd` turns the dial pointer by the bobber's speed (world units per real second, smoothed, only while in the water with joint force over 4) times `callibrationMult`, which is 28 on both the E and M variants (data). That's 33.6 degrees per in-game knot. The dial numerals are separate meshes over a texture atlas (`chiplog paint Diffuse Color`), so the knot scale wasn't confirmed.
+- **Chip log:** two vanilla prefabs, 92 (sold at Fort Aestrin; data name "92 chip log M") and 93 (Gold Rock; "93 chip log E"), with identical settings: `maxLength` 14 m, `minLength` 0.15, `minVelocity` 11, `autoReturnSpeed` 1, `bobberForceMult` 200, dial `tensionSpeed` 5, `pointerSpeed` 1, `callibrationMult` 28. `ChipLogRopeEnd` turns the needle by the bobber's total speed (world units per real second, smoothed, only while in the water with joint force over 4) x 28 degrees, which is **14.4 degrees per real knot**: the dial reads real-world knots (confirmed: 132 degrees read about 9, 190 degrees about 13). Because it follows the bobber, not the boat through the water, it spikes when a wave or the line jerks the bobber (13 kn shown at a steady 5 kn). The line joint is springy and a full 14 m line stretches past `maxLength`.
 - **Sail hinge audio:** `SailHingeAudio` plays the gybe snap from the change in angular velocity against the private `lastVelocity` (`float`).
 - **Mugs:** `Mug.Spill()` is private. `ShipItemBottle` and `ShipItemSoup` both have a private `bool drinking`.
 - **`LookUI`:** private fields `controlsText`, `hintText`, `extraText`, `textLicon`, `textRIcon` (`TextMesh`), `mouseLIcon`, `mouseRIcon` (`Renderer`), `LMBicon`, `RMBicon` (`Material`) and `pointer` (`GoPointer`). It is world-space text that shares the transparent queue with smoke particles.
 - **`PlayerNeedsUI`:** private `inventory` (`Transform`). The hotbar scales with the needs UI root.
-- **`WorldItemSpawner`:** private `item` (`ShipItem`). Its update has a 100 m distance-from-camera check (what it gates wasn't checked).
-- **Boat camera:** **C** toggles the boat camera (`BoatCamera.SwitchOn`/`SwitchOff`), which plays the UI click. With SailwindCoop and SailwindPlayerModel it works as a third-person player view, but vanilla still disables aiming while `BoatCamera.on`.
+- **`WorldItemSpawner`:** private `item` (`ShipItem`). It only spawns its item while the camera is within 100 m (otherwise it rechecks in 0.1 s). After pickup it waits `respawnTime` x 0.75-1.25, or never respawns when `respawnTime` <= 0. Spawned items are parented to the spawner's parent (island scenery) and frozen until picked up.
+- **Boat camera:** **C** toggles the boat camera (`BoatCamera.SwitchOn`/`SwitchOff`), which plays the UI click. SailwindPlayerModel's follow view is built on it: with its `FollowCamera` option, its `PlayerOrbitCamera` patch on `BoatCamera.Update` cycles C through first person, Following (orbit behind the character) and Ship, and `BoatCamera.on` is true in both of the latter, so vanilla disables aiming. It exposes `PlayerOrbitCamera.Following`. SailwindCoop only reads `BoatCamera.on`.
 - **Mirage Mountain village chart:** prefab 165, a `ShipItemFoldable`. Vanilla parents it to island scenery.
+- **Island scenes:** `IslandHorizon` loads an island's scene additively within `islandLoadDistance` and unloads it beyond: 1,800 m for 36 islands, 1,200 m for 10 (the Lagoon islands and E swamp, jungle and onsen). That's before items unfreeze (600 m) or a house respawns (1,000 m). House 201's island is scene 1 (gold rock), house 202's is scene 9 (dragon cliffs).
+- **Stove pots jitter:** a pot sitting on a stove re-enters a neighboring cook slot's trigger constantly (5,668 `OnTriggerEnter` calls in one session on the Sanbuq's stove). Vanilla ignores them because the slot is full; it's a likely cause of the hover flicker `StabilizeStoveItemHover` works around.
 
 ## Working with the game files
 
@@ -222,36 +233,40 @@ Source: decompile unless noted.
   - Vanilla `Debug.Log` goes to `%USERPROFILE%\AppData\LocalLow\Raw Lion Workshop\Sailwind\Player.log`, which keeps only `Player.log` and `Player-prev.log`, so grab it right after a test.
   - BepInEx has `WriteUnityLog = false`, so vanilla lines are not in `LogOutput.log`.
 - **ModPack library:** the manager's library (`%LOCALAPPDATA%\SailwindModSynchronizer\library\mods\<guid>\<version>`) is shared by version across packs. Deploying a test build under an already-released version overwrites that version in every pack that pins it, so bump the version first.
+- **Debug probes:** a temporary `DebugProbesPatches.cs` (not committed) answered the runtime questions: keys Home (every collider on the look ray, all layers), End (items within 30 m that belong to a boat or house), Page Down (nearest chip log dial and its settings), plus passive warehouse-trigger and stove-slot logging. Home, End, Page Up/Down and Insert are unbound by the game and the Dizzy Sept 2026 mods; F8, F9 and F11 are taken by mod panels and F10 opens the pause menu.
 
 ## Unanswered questions
 
-Things we ran into but didn't settle. Each says what we know and how to answer it.
+Answered on 2026-10-04 from the full decompile, the game data and the debug probes; the facts are folded into the sections above.
 
-### World and time
+| Question | Answer | How |
+| --- | --- | --- |
+| `shiftDistance` | 512 m | data |
+| When do island scenes load? | 1,800 m (36) or 1,200 m (10) from the island; before the 600 m unfreeze | decompile + data |
+| Does a setting change `Sun.timescale`? | No; only editor-only debug keys | decompile |
+| Which layer are the walls we targeted through? | The boat's `hull player collider` on layer 12 (seen on the Sanbuq) | Home probe |
+| What's on layers 13 and 16? | 13: one capsule per boat; 16: no colliders, hotbar items at runtime | data + End probe |
+| `Physics.queriesHitTriggers` | true | data |
+| How do SailwindCoop / SailwindPlayerModel handle C? | PlayerModel's follow view is vanilla `BoatCamera` (aiming off); Coop doesn't touch aiming | decompile of both mods |
+| Who sets `itemsLoaded`? | Only the cache respawn (and a sunk-boat load); boat loads and recovery clear it | decompile |
+| Does `OnTriggerExit` fire when a good is picked up? | Yes, when carried out of the yard; held goods count while inside | probe |
+| What does `WorldItemSpawner`'s 100 m check do? | Gates spawning | decompile |
+| Chip log: in-game or real knots? | Real knots, 14.4 degrees per knot | Page Down probe + dial readings |
+| Is `Speedometer` used in normal play? | Only in the P+N+T build debug mode | decompile + data |
+| Crate food to stove | Confirmed: crate-linked food entered empty cook slots | stove probe |
 
-- **What is `FloatingOriginManager.shiftDistance`?** Our `SkipSmoothOriginShift` comment says 512 m, but this session didn't read it. Read it from `level24` with UnityPy, the same way as `Sun.timescale`.
-- **When do island scenes load and unload?** Out-of-range items unfreeze within 600 m of the camera, but we don't know whether an island's terrain and buildings are loaded by then. If they aren't, items could fall through the floor. Log `SceneManager.sceneLoaded`/`sceneUnloaded` with the player's distance while sailing toward and away from an island.
-- **Is `Sun.timescale` ever changed by game settings?** It's 0.008 in the scene and only multiplied for time-skip sleep. We didn't check whether a menu option or difficulty changes it.
+### Still open
 
-### Looking and aiming
+- **Why does the Fort Aestrin chip log perform so differently?** Partly answered. Prefab 92 (Fort Aestrin, M model) and prefab 93 (Gold Rock and Dragon Cliffs, E model) share every tuning value (line length, forces, return speed, dial multiplier and smoothing), but the shape differs (full-prefab diff of sharedassets15 vs sharedassets1):
 
-- **Which layer are the walls we saw targeted through?** Tables and stoves were clickable through a wall. The look ray skips layers 12 (OnlyPlayerCol+Paintable) and 19 (IgnoreSmallItems), and we didn't confirm which one those walls use. Aim through such a wall and log every collider on a ray cast with all layers (`~0`), with its layer.
-- **What exactly is on layers 13 (BoatCapsule) and 16 (invis)?** Both are skipped by the look ray; the names suggest a big capsule around each boat and invisible helper colliders. List colliders per layer from `level24` with UnityPy.
-- **What is `Physics.queriesHitTriggers` set to?** Several look rays use the global trigger setting (`QueryTriggerInteraction.UseGlobal`). `LookRay` handles both values, but we never read the project setting. Read it from the `PhysicsManager` in `globalgamemanagers`.
-- **How do SailwindCoop and SailwindPlayerModel handle C?** Vanilla treats C as the boat camera (`BoatCamera.on`) and disables aiming. We don't know whether those mods reuse `BoatCamera` or add their own camera. Decompile both mods before allowing item use from that view.
+    | What | 92 Fort Aestrin | 93 Gold Rock / Dragon Cliffs |
+    | --- | --- | --- |
+    | Body `BoxCollider` size (w x h x d) | 0.34 x 0.93 x 0.20 m | 0.34 x 0.73 x 0.12 m |
+    | Body collider center (y, z) | +0.02, +0.06 | -0.02, +0.02 |
+    | Line attachment (`rope att`) height | 0.465 m | 0.326 m |
+    | Bobber rest (`rope end`) | 0.431 m up | 0.318 m up, 0.025 m forward |
+    | Line joint anchor | set by hand (`autoConfigureConnectedAnchor` off), 0.395 m | automatic, 0.318 m |
 
-### Items, boats and houses
-
-- **Who sets `BoatLocalItems.itemsLoaded` in a fresh session?** Caching only starts when it's true, and the scene starts it false for every boat and house. `SpawnCachedItems` (after a load) sets it, but we found no other caller in `SaveLoadManager`, `StartMenu`, `GameState` or `BoatHorizon`. A boat or house that never respawned from a cache this session may never cache at all. Search every type in `Assembly-CSharp` for `SetItemsLoaded`/`itemsLoaded`.
-- **Why weren't 14 items on the small dhow on its walk collider?** The housing playtest showed a table, lantern, water barrel, oar, pipe, map and more with save parent 10 but `currentWalkCol == null`. `EnterBoat` sets `currentWalkCol`, so these items either never ran `EnterBoat` (e.g. spawned from a cache or save and not re-embarked) or lost it. Log `currentWalkCol` and the save parent for items on a boat right after a load and after a cache respawn.
-- **Does `OnTriggerExit` fire when a good is picked up?** A held item's colliders become triggers, and Unity's rules for trigger-to-trigger contacts decide whether the warehouse yard sees it leave. Test by picking a crate up in a warehouse yard and logging `IslandMarketWarehouseArea.goodsInArea`.
-- **What does `WorldItemSpawner`'s 100 m camera check control?** We only saw the check, not what it gates. Read `WorldItemSpawner.Update` in full.
-
-### Instruments and UI
-
-- **Does the chip log dial read in-game knots or real knots?** The pointer turns 28 degrees per m/s of bobber speed: 33.6 degrees per in-game knot, or 14.4 per real knot. The numerals are separate meshes over a texture atlas, so we couldn't read their angles or where the zero mark sits. Read the chip log mesh and measure each numeral's angle around the dial center, or sail due north at a steady speed and time one minute of latitude (150 m).
-- **Is `Speedometer` used anywhere in normal play?** It shows real knots and km/h on a `TextMesh`, which looks like a debug tool. Find which prefabs or scenes carry it.
-
-### Open bugs with a lead
-
-- **Why does food from an open crate end up on a nearby stove?** (Open in `docs/BUG_TRACKER.md`.) `StoveCookTrigger.OnTriggerEnter` inserts any `CookableFood` that enters an empty cook slot, with no check for `currentCrateId` or layer 26. When a crate's grid is open, its items are laid out in the world at the grid squares, so food whose square overlaps a stove's cook slot can be pulled into the stove. "Sometimes" may come down to whether a square overlaps an empty slot. Confirm by opening a crate of food beside a stove and logging `StoveCookTrigger.OnTriggerEnter`.
+    The dial follows the bobber's total speed, and in the Aestrin test (aboard the medi medium, 50) one reading showed 13 kn at a steady 5 kn when the bobber was yanked to 7.5 m/s. Theory: the taller, deeper body with a higher line attachment gives the line more leverage to rock the log when it goes taut, and each rock yanks the bobber. Nailing the log (which makes it kinematic) should remove that. To confirm: read both logs on the same boat in the same water, loose and nailed.
+- **Why weren't 14 items on the small dhow (10) on its walk collider?** On the Sanbuq every item had a walk collider; the 14 items without one were on "BOAT dhow small (10)" in the housing test. Load next to the small dhow and press End.
+- **In-game names of the other boats.** Only the Sanbuq ("dhow medium (20)") is confirmed.

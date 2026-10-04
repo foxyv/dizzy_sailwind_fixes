@@ -39,6 +39,47 @@ namespace Dizzy.Fixes
         }
     }
 
+    // ShipItem.OnEnterInventory only calls ExitBoat(), so an item put in the
+    // hotbar inside a player house keeps the house as its save parent. The
+    // house's BoatLocalItems then caches it at 1000 m like any house item, and
+    // it vanishes from the hotbar until the house respawns it. Every slot
+    // insert (pickup and PutInInventory after a load) goes through
+    // EnterInventorySlot, so clear the parent there, as ExitHouse would.
+    internal static class HotbarItems
+    {
+        internal static bool Enabled()
+        {
+            return FixesConfig.KeepHotbarItemsWhenAway != null
+                && FixesConfig.KeepHotbarItemsWhenAway.Value;
+        }
+
+        internal static void ReleaseFromOwner(ShipItem item)
+        {
+            if (item == null)
+                return;
+
+            SaveablePrefab saveable = item.GetComponent<SaveablePrefab>();
+            if (saveable == null || saveable.GetParentObject() <= 0)
+                return;
+
+            saveable.SetParentObject(-1);
+            if (FloatingOriginManager.instance != null)
+                item.transform.parent = FloatingOriginManager.instance.transform;
+        }
+    }
+
+    [HarmonyPatch(typeof(ItemRigidbody), nameof(ItemRigidbody.EnterInventorySlot))]
+    internal static class KeepHotbarItemsWhenAwayPatch
+    {
+        private static void Postfix(ShipItem ___item)
+        {
+            if (!HotbarItems.Enabled())
+                return;
+
+            HotbarItems.ReleaseFromOwner(___item);
+        }
+    }
+
     [HarmonyPatch(typeof(ItemRigidbody), "FixedUpdate")]
     internal static class KeepHouseItemsWhenAwayPatch
     {

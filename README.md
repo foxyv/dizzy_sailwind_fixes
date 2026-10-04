@@ -57,6 +57,7 @@ The build doesn't copy the DLL anywhere; the game folder stays vanilla. For play
 | `DropBigCratePastOtherCrates` | on | While carrying a two-handed item, the look ray ignores other objects so left-click can drop it, except an object that item can use, the merchant sell button, and boat ladders. Climbing a ladder keeps the carried item. A held barrel can still be clicked on another barrel of the same liquid to refill. Vanilla highlights the next object, and a highlighted object blocks the drop. |
 | `KeepMissionListPage` | on | Accepting a port mission keeps the mission list on the current page. The accepted mission drops out and later missions shift into that page. Vanilla reloads page 1 while the page number stays where it was. |
 | `KeepHouseItemsWhenAway` | on | Items you leave in a player house are still there when you come back. Vanilla deletes them for good once you sail about 600 m away. |
+| `KeepHotbarItemsWhenAway` | on | Items you put in your hotbar inside a player house stay in your hotbar when you sail away. Vanilla still counts them as house items, so they vanish from the hotbar while you're about 1 km from the house. |
 | `DelayBoatCacheSpawn` | off | Debug only. After each load, a boat's loose items appear first and its crates wait several frames. Crate contents then miss the crate and fall out. Leave this off while playing. |
 
 Toggles live in `BepInEx\config\com.dizzy.sailwind.fixes.cfg`.

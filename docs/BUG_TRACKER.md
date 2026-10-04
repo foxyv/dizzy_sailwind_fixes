@@ -62,9 +62,8 @@ Copy this template for a new entry:
 - **Steps:** Place a crate next to a stove, then open the crate.
 - **Expected:** The crate's items stay in the crate's grid.
 - **Actual:** Items in the crate grid that overlap the stove are sometimes added to the stove.
-- **Notes:** Happens only sometimes. Not confirmed yet, but there's a strong lead:
-    - **Lead:** vanilla `StoveCookTrigger.OnTriggerEnter` inserts any `CookableFood` that enters an empty cook slot (`!currentFood && !stove.held`), with no check for whether the food is in a crate (`SaveablePrefab.currentCrateId`, layer 26 ItemInCrate). While a crate's grid is open, its items are laid out in the world at the grid squares (`CrateInventory.LateUpdate` stops pinning them to the crate), so food whose square overlaps a stove's cook slot gets pulled into the stove. "Sometimes" would come down to whether a square overlaps an empty slot.
-    - **To confirm:** open a crate of food beside a stove and log `StoveCookTrigger.OnTriggerEnter` with the food's `currentCrateId` and layer.
+- **Notes:** Happens only sometimes. Cause confirmed with the debug probes (2026-10-04): tuna still linked to its crate (`currentCrateId` 1002797246) entered stove cook slots 8 times, at least 3 of them into an empty slot, with the crate's grid open (food on layer 2) and closed (layer 0).
+    - **Cause:** vanilla `StoveCookTrigger.OnTriggerEnter` inserts any `CookableFood` that enters an empty cook slot (`!currentFood && !stove.held`), with no check for whether the food is in a crate (`SaveablePrefab.currentCrateId`, layer 26 ItemInCrate). While a crate's grid is open, its items are laid out in the world at the grid squares (`CrateInventory.LateUpdate` stops pinning them to the crate), so food whose square overlaps a stove's cook slot gets pulled into the stove. "Sometimes" would come down to whether a square overlaps an empty slot.
     - **Likely fix:** a prefix on `StoveCookTrigger.OnTriggerEnter` that skips food with `currentCrateId > 0` (or on layer 26). Check that taking food out of a crate onto the stove still works, since `WithdrawItem` clears `currentCrateId` first.
 
 ## Watch list
@@ -79,11 +78,12 @@ Copy this template for a new entry:
 
 ### Trade book can count a good that left the warehouse yard without a trigger exit
 
-- **Noted:** 2026-10-03 (modcheck plan step 8 review)
+- **Noted:** 2026-10-03 (modcheck plan step 8 review); mostly resolved by probe on 2026-10-04
 - **Area:** shops and trade
-- **Possible symptoms:** the trade book lists more crates or barrels than are in the yard, or selling through it destroys a crate that is no longer there (for example one you've carried back to your boat).
-- **Why it can happen:** vanilla tracks the yard with `OnTriggerEnter`/`OnTriggerExit` on `IslandMarketWarehouseArea`. Unity doesn't fire `OnTriggerExit` when a collider is disabled or switched to a trigger, so a good can leave without being removed. Our `WarehouseSync.Validate` (`TradeBookFailedSalePatches.cs`) prunes destroyed goods and adds goods the trigger missed, but keeps listed goods that still exist even if they no longer overlap the yard.
-- **If a bug points here:** in `Validate`, also drop listed goods that no longer overlap the trigger, using the existing `Overlaps(col, hit)` check against each good's collider.
+- **Possible symptoms:** the trade book lists more crates or barrels than are in the yard, or selling through it destroys a crate that is no longer there.
+- **What the probe showed (Gold Rock):** carrying a good out of the yard fires `OnTriggerExit` (`held=True`) and `RemoveGood`, and carrying it back in fires `OnTriggerEnter` and `AddGood`. So picking a good up and carrying it away is tracked. Vanilla `OnTriggerEnter` never checks `held`, so a crate you're carrying counts as stock while you're inside the yard.
+- **Still possible:** a good leaving without a trigger exit by other means (Unity doesn't fire `OnTriggerExit` when a collider is disabled). Our `WarehouseSync.Validate` (`TradeBookFailedSalePatches.cs`) prunes destroyed goods and adds missed ones, but keeps listed goods that still exist even if they no longer overlap the yard.
+- **If a bug points here:** in `Validate`, also drop listed goods that no longer overlap the trigger (existing `Overlaps(col, hit)` check), and consider skipping held goods.
 
 ### Look fixes can target things behind walls, decks or hulls
 
@@ -95,6 +95,28 @@ Copy this template for a new entry:
 - **If a bug points here:** the dropped step 7 approach was a `LookRay.BehindBlocker(ray, distance)` check. It finds the nearest non-trigger hit with no `GoPointerButton` on it or its parents (walls, decks, hulls, terrain; items and furniture never block), then each fix skips targets more than 5 cm past it. That only covers walls on layers the look ray hits. Walls on layers 12 and 19 would need a second cast with those layers added, but not Player (11), BoatCapsule (13) or invis (16), which would block everything on a boat or at a dock. Consider making it an optional, off-by-default fix.
 
 ## Fixed
+
+### Hotbar items picked up in a player house vanish while you're away from the house
+
+- **Reported:** 2026-10-03 (found with the debug probes, then reproduced in game)
+- **Fixed:** 2026-10-04 in 0.3.4 (`KeepHotbarItemsWhenAway`, `HouseItemsPatches.cs`)
+- **Source:** Vanilla bug.
+- **Area:** player housing / inventory
+- **Actual (before the fix):** Items put in the hotbar inside a player house vanished from the hotbar once you were about 1 km from the house, and came back into their slots when you returned.
+- **Cause:** `ShipItem.EnterHouse` sets an item's save parent to the house, and `ShipItem.OnEnterInventory` only calls `ExitBoat()`, so a hotbar item kept the house as its parent (End probe: compass, hammer, mug, spyglass with `parent=201` on layer 5, and still `parent=201` on layer 16 after the house restored them). At 1000 m, `BoatLocalItems.CacheCurrentItems` stores every prefab with that parent, without skipping inventory items, and marks them -2 so they're destroyed. `SaveablePrefab.Load` then puts them back with `PutInInventory` when the house respawns its items.
+- **Fix:** a postfix on `ItemRigidbody.EnterInventorySlot`, the one path for every hotbar insert (pickup and `PutInInventory` after a load), clears a save parent above 0 (`SetParentObject(-1)`) and parents the transform to the world, as `ExitHouse` does. Hotbar items already tied to a house in an old save are released the next time they're put back into their slot.
+- **Verified:** playtest on the Dizzy Sept 2026 pack, 0.3.4: after loading near house 201 and picking up more items inside it, the hotbar stayed full while sailing more than 1 km away.
+
+### Chip log reels straight back in as soon as the line stretches
+
+- **Reported:** 2026-10-04 (seen with the Gold Rock chip log while testing the dial)
+- **Fixed:** 2026-10-04 in 0.3.4 (`KeepChipLogDeployed`, `ChipLogAutoReelPatches.cs`)
+- **Source:** Our bug, from the 0.2.82 stranded-bobber recovery.
+- **Area:** sailing / chip log
+- **Actual (before the fix):** A thrown chip log reeled the bobber straight back in once the line started to stretch.
+- **Cause:** `ChipLogDeployed.RecoverLostBobber` treated the bobber as stranded as soon as it was more than 1 m past the line's `maxLength`. Both vanilla chip logs (prefabs 92 and 93) have `maxLength` 14 m and a springy line joint, so a full line at speed easily passed 15 m.
+- **Fix:** a bobber only counts as stranded when it's more than 50 m past `maxLength`. Stretches past the old limit are logged (`KeepChipLogDeployed: line stretched to ...`), and so is a real recovery.
+- **Verified:** playtest with the Gold Rock chip log: the line stayed out.
 
 ### Player housing despawns all items when you go too far away
 

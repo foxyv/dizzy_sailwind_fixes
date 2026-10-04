@@ -26,7 +26,22 @@ namespace Dizzy.Fixes
     // the item into the hand. ThrowRod then releases it.
     internal static class ChipLogDeployed
     {
+        private const float StrandedMargin = 50f;
+
         private static readonly Dictionary<int, bool> Deployed = new Dictionary<int, bool>();
+        private static readonly Dictionary<int, float> LoggedStretch = new Dictionary<int, float>();
+
+        private static void NoteStretch(ShipItemChipLog log, float dist, float maxLength)
+        {
+            int id = log.GetInstanceID();
+            float logged;
+            if (LoggedStretch.TryGetValue(id, out logged) && dist < logged + 0.5f)
+                return;
+
+            LoggedStretch[id] = dist;
+            Plugin.Log.LogInfo("KeepChipLogDeployed: line stretched to " + dist.ToString("0.0") + " m (max "
+                + maxLength.ToString("0.0") + " m); not treated as stranded.");
+        }
 
         internal static bool Enabled()
         {
@@ -87,6 +102,16 @@ namespace Dizzy.Fixes
             if (dist <= maxLength + 1f)
                 return;
 
+            // The line joint is springy, so a full line at speed runs past
+            // maxLength. Only a bobber far beyond that is stranded.
+            if (dist <= maxLength + StrandedMargin)
+            {
+                NoteStretch(log, dist, maxLength);
+                return;
+            }
+
+            Plugin.Log.LogInfo("KeepChipLogDeployed: pulled a stranded bobber home from " + dist.ToString("0.0")
+                + " m away (line max " + maxLength.ToString("0.0") + " m).");
             thrown = false;
             Forget(log);
             currentTargetLength = minLength;
@@ -129,8 +154,10 @@ namespace Dizzy.Fixes
 
         internal static void Forget(ShipItemChipLog log)
         {
-            if (log != null)
-                Deployed.Remove(log.GetInstanceID());
+            if (log == null)
+                return;
+            Deployed.Remove(log.GetInstanceID());
+            LoggedStretch.Remove(log.GetInstanceID());
         }
 
         internal static void ReverseAirborneReturn(
