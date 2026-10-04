@@ -37,6 +37,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> DropBigCratePastOtherCrates;
         internal static ConfigEntry<bool> KeepMissionListPage;
         internal static ConfigEntry<bool> KeepHouseItemsWhenAway;
+        internal static ConfigEntry<bool> KeepHotbarItemsWhenAway;
         internal static ConfigEntry<bool> DelayBoatCacheSpawn;
 
         internal static void Bind(ConfigFile config)
@@ -240,6 +241,12 @@ namespace Dizzy.Fixes
                 "KeepHouseItemsWhenAway",
                 true,
                 "Items you leave in a player house are still there when you come back. Vanilla deletes them for good once you sail about 600 m away.");
+
+            KeepHotbarItemsWhenAway = config.Bind(
+                "Fixes",
+                "KeepHotbarItemsWhenAway",
+                true,
+                "Items you put in your hotbar inside a player house stay in your hotbar when you sail away. Vanilla still counts them as house items, so they vanish from the hotbar while you're about 1 km from the house.");
 
             DelayBoatCacheSpawn = config.Bind(
                 "Debug",
