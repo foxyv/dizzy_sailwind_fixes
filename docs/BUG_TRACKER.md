@@ -66,6 +66,14 @@ Copy this template for a new entry:
 
 ## Watch list
 
+### Items thrown out of a player house are never cleaned up
+
+- **Noted:** 2026-10-03 (review of the 0.3.3 `KeepHouseItemsWhenAway` fix; not expected to be a problem)
+- **Area:** player housing / item cleanup
+- **Possible symptoms:** junk piles up outside a player house over a long game, or an item thrown out of a house into the water is still floating there sessions later. Save files grow slightly.
+- **Why it can happen:** vanilla `ShipItem.ExitHouse` only clears an item's house parent if the item is held when it leaves the house trigger. An item thrown, knocked, rolled or kicked out keeps the house as its save parent. Before 0.3.3, vanilla's 600 m range destroy deleted it anyway; `KeepHouseItemsWhenAway` now protects every unheld item whose save parent is a house, so it stays (frozen while you're away, cached and restored by the house at 1000 m). Dock trash and items dropped off a boat are not affected: leaving the boat's embark trigger runs `ExitBoat()` and resets the parent to -1, so they're still deleted at 600 m.
+- **If a bug points here:** in `HouseItems.BelongsToSaveableObject` (`HouseItemsPatches.cs`), when the save parent is a house, only protect the item while it is inside that house's trigger collider (check its real shape, e.g. `ClosestPoint`). Leave boat items as they are.
+
 ### Trade book can count a good that left the warehouse yard without a trigger exit
 
 - **Noted:** 2026-10-03 (modcheck plan step 8 review)
