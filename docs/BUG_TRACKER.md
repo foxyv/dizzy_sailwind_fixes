@@ -62,7 +62,10 @@ Copy this template for a new entry:
 - **Steps:** Place a crate next to a stove, then open the crate.
 - **Expected:** The crate's items stay in the crate's grid.
 - **Actual:** Items in the crate grid that overlap the stove are sometimes added to the stove.
-- **Notes:** Happens only sometimes. Not investigated yet.
+- **Notes:** Happens only sometimes. Not confirmed yet, but there's a strong lead:
+    - **Lead:** vanilla `StoveCookTrigger.OnTriggerEnter` inserts any `CookableFood` that enters an empty cook slot (`!currentFood && !stove.held`), with no check for whether the food is in a crate (`SaveablePrefab.currentCrateId`, layer 26 ItemInCrate). While a crate's grid is open, its items are laid out in the world at the grid squares (`CrateInventory.LateUpdate` stops pinning them to the crate), so food whose square overlaps a stove's cook slot gets pulled into the stove. "Sometimes" would come down to whether a square overlaps an empty slot.
+    - **To confirm:** open a crate of food beside a stove and log `StoveCookTrigger.OnTriggerEnter` with the food's `currentCrateId` and layer.
+    - **Likely fix:** a prefix on `StoveCookTrigger.OnTriggerEnter` that skips food with `currentCrateId > 0` (or on layer 26). Check that taking food out of a crate onto the stove still works, since `WithdrawItem` clears `currentCrateId` first.
 
 ## Watch list
 
