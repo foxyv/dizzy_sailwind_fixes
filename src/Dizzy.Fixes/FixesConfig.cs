@@ -17,6 +17,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> PreferMooredDockLineLook;
         internal static ConfigEntry<bool> RightClickBoatMooringCastOff;
         internal static ConfigEntry<bool> HideInventoryOnNeedsWarning;
+        internal static ConfigEntry<bool> AnchorNeedsBarsOnFeedback;
         internal static ConfigEntry<bool> PourSoupIntoMug;
         internal static ConfigEntry<bool> PourFromHeldBarrel;
         internal static ConfigEntry<bool> KeepChipLogDeployed;
@@ -120,6 +121,12 @@ namespace Dizzy.Fixes
                 "HideInventoryOnNeedsWarning",
                 true,
                 "Do not draw hotbar items on top of the hunger, thirst, or sleep bars. Vanilla scales those items with the whole needs UI, so they stack on the bars whenever a need flashes.");
+
+            AnchorNeedsBarsOnFeedback = config.Bind(
+                "Fixes",
+                "AnchorNeedsBarsOnFeedback",
+                true,
+                "Eating or drinking shows the hunger, thirst and sleep bars facing you. Vanilla leaves them on the VR hand anchor until you first open the inventory or get a needs warning, so until then they pop up twisted off to one side.");
 
             PourSoupIntoMug = config.Bind(
                 "Fixes",
