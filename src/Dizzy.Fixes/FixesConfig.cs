@@ -14,6 +14,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> RightClickNearestDockMooring;
         internal static ConfigEntry<float> RightClickNearestDockMooringFeet;
         internal static ConfigEntry<float> RightClickNearestDockMooringArcDegrees;
+        internal static ConfigEntry<bool> HighlightNearestDockMooring;
         internal static ConfigEntry<bool> PreferMooredDockLineLook;
         internal static ConfigEntry<bool> RightClickBoatMooringCastOff;
         internal static ConfigEntry<bool> HideInventoryOnNeedsWarning;
@@ -103,6 +104,12 @@ namespace Dizzy.Fixes
                 "RightClickNearestDockMooringArcDegrees",
                 10f,
                 "How wide (in degrees) the forward arc is when throwing a mooring line. Only a free cleat inside that arc can be hit, and the one closest to the middle of the arc wins. Default 10 is the full width, 5 degrees either side of where you are facing.");
+
+            HighlightNearestDockMooring = config.Bind(
+                "Fixes",
+                "HighlightNearestDockMooring",
+                true,
+                "While you hold a boat's mooring line, outline the dock cleat a right-click would throw it onto. Needs RightClickNearestDockMooring.");
 
             PreferMooredDockLineLook = config.Bind(
                 "Fixes",

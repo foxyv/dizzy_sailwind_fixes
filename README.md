@@ -34,6 +34,7 @@ The build doesn't copy the DLL anywhere; the game folder stays vanilla. For play
 | `RightClickNearestDockMooring` | on | Right-click while holding a mooring line throws it to a free dock cleat in front of you. Vanilla left-click needs a precise 1.8 m look on the post, which dock mesh often blocks (especially Gold Rock). |
 | `RightClickNearestDockMooringFeet` | 15 | How far (in in-game feet) that right-click will search for a free cleat. |
 | `RightClickNearestDockMooringArcDegrees` | 10 | How wide the forward arc is. Only a cleat inside that arc can be hit, and the one closest to where you are facing wins. 10 is the full width, 5 degrees either side. |
+| `HighlightNearestDockMooring` | on | While you hold a boat's mooring line, outline the dock cleat a right-click would throw it onto. Needs RightClickNearestDockMooring. |
 | `PreferMooredDockLineLook` | on | Looking at a mooring line tied to a cleat still selects the line when dock mesh or the boat-push collider is in front of it. Vanilla's look ray hits the quay first, so you cannot click the knot. |
 | `RightClickBoatMooringCastOff` | on | Right-click the boat end of a tied mooring line to cast off, with the same pickup sound as unmooring the dock knot. Vanilla right-click picks up the coil (same as left-click) to pay the line in or out; left-click still does that. |
 | `HideInventoryOnNeedsWarning` | on | Hunger, thirst, and sleep warnings show only the status bars. Vanilla scales hotbar items with the whole needs UI, so they stack on the bars whenever a need flashes. |
