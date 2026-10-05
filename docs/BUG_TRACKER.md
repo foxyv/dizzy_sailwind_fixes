@@ -1,6 +1,6 @@
 # Bug Tracker
 
-Bugs to fix later. Add new entries at the top of **Open**, and move an entry to **Fixed** once its fix ships. **Watch list** holds known risks nobody has reported yet; check it when a new bug comes in.
+Bugs to fix later. Add new entries at the top of **Open**, and move an entry to **Fixed** once its fix ships. **Watch list** holds known risks nobody has reported yet; check it when a new bug comes in. **Will not fix** keeps entries we decided to leave alone, in case they come up again.
 
 Copy this template for a new entry:
 
@@ -26,16 +26,6 @@ Copy this template for a new entry:
 - **Actual:** Users report the descriptions are bad: hard to follow, and they don't explain what each fix does.
 - **Notes:** The 32 descriptions in `FixesConfig.cs` average 44 words; the longest are `AlignPlacedItemToSurface` (92), `KeepChipLogDeployed` (78), `DropBigCratePastOtherCrates` (65), `KeepCrateContentsWithBoat` (61) and `KeepLoadedSailsUnfurled` (60). Many explain vanilla internals instead of player-visible behavior, e.g. "world-space TextMesh shares the transparent queue" (`KeepLookTextAboveSmoke`), "kinematic ... angularDrag" (`DampenItemRoll`), "ShiftSmoothly waits 100 physics ticks" (`SkipSmoothOriginShift`). The same text is repeated in the README table, so fix both together. Keep the internals in code comments; the description should say what the player sees with the fix on vs off. Ask the reporting users which fixes confused them most. Related: the mooring distance entry below (labeled feet, actually meters).
 
-### Allow using items from the third-person view (C) with co-op and player model mods
-
-- **Reported:** 2026-10-03
-- **Source:** Feature idea; vanilla behavior with the SailwindCoop and SailwindPlayerModel mods.
-- **Area:** look and aim / third-person camera
-- **Steps:** With SailwindCoop and SailwindPlayerModel installed, press C to switch to the third-person view and try to use or pick up an item.
-- **Expected:** Possibly allow aiming and using items from that view, since those mods make it a real third-person player view, not just a boat-steering camera.
-- **Actual:** Items can't be targeted or used from that view.
-- **Notes:** C is vanilla `BoatCamera` (the `CameraMode` toggle `MuteCameraModeSound` also patches). Vanilla `GoPointer.DoRaycast` clears the target whenever `BoatCamera.on`, and since 0.3.2 the look fixes follow the same rule through `LookRay.VanillaAims`. Allowing use would mean letting `DoRaycast` aim while `BoatCamera.on` (likely only when SailwindPlayerModel is installed), casting from the right point (the player model's view, not the orbiting camera), and dropping the `BoatCamera.on` check from `VanillaAims` in the same case. Check how SailwindCoop and SailwindPlayerModel handle C before deciding.
-
 ### Container or barrel highlights while placing an item on it
 
 - **Reported:** 2026-10-03
@@ -45,15 +35,6 @@ Copy this template for a new entry:
 - **Expected:** Only the placement preview shows; the surface you're placing onto doesn't light up.
 - **Actual:** The container or barrel shows its look highlight the whole time you're placing.
 - **Notes:** Vanilla keeps calling `Look()` on the surface while you hold an item over it (`GoPointer.DoRaycast`), and its place preview (`GoPointer.LateUpdate`) depends on that surface staying `pointedAtButton`, so `GoPointerButton.UpdateColor` draws the looked-at outline. Tables have no visible outline, so it only shows on items like crates and barrels. A fix would have to hide the outline without clearing `pointedAtButton`, e.g. a prefix on `UpdateColor` for the placement target (see how `DropBigCrateOutlinePatch` suppresses outlines). Decide first whether it applies only to pipes and quadrants or to every placed item.
-
-### Mooring throw distance is labeled feet but is meters
-
-- **Reported:** 2026-10-02
-- **Area:** mooring / config
-- **Steps:** Read the `RightClickNearestDockMooringFeet` description in `com.dizzy.sailwind.fixes.cfg` or the README fixes table.
-- **Expected:** The label matches the unit the value is used in.
-- **Actual:** The config and README say "in-game feet (world units)", but `DockMooringSnap.Range` uses the value directly as world units. Sailwind's world units are meters (Unity's convention; 9,000 units per degree of latitude, about 1.8 units of arm reach), so the default 15 is about 15 m, not 15 ft.
-- **Notes:** Fix the wording in `FixesConfig.cs` and `README.md`. Renaming the key (for example to `RightClickNearestDockMooringMeters`) would orphan the value in existing configs, so either keep the key and fix only the text, or migrate the old value.
 
 ### Items from an open crate get added to a nearby stove
 
@@ -65,6 +46,30 @@ Copy this template for a new entry:
 - **Notes:** Happens only sometimes. Cause confirmed with the debug probes (2026-10-04): tuna still linked to its crate (`currentCrateId` 1002797246) entered stove cook slots 8 times, at least 3 of them into an empty slot, with the crate's grid open (food on layer 2) and closed (layer 0).
     - **Cause:** vanilla `StoveCookTrigger.OnTriggerEnter` inserts any `CookableFood` that enters an empty cook slot (`!currentFood && !stove.held`), with no check for whether the food is in a crate (`SaveablePrefab.currentCrateId`, layer 26 ItemInCrate). While a crate's grid is open, its items are laid out in the world at the grid squares (`CrateInventory.LateUpdate` stops pinning them to the crate), so food whose square overlaps a stove's cook slot gets pulled into the stove. "Sometimes" would come down to whether a square overlaps an empty slot.
     - **Likely fix:** a prefix on `StoveCookTrigger.OnTriggerEnter` that skips food with `currentCrateId > 0` (or on layer 26). Check that taking food out of a crate onto the stove still works, since `WithdrawItem` clears `currentCrateId` first.
+
+## Will not fix
+
+### Allow using items from the third-person view (C) with co-op and player model mods
+
+- **Reported:** 2026-10-03
+- **Status:** Will not fix here (decided 2026-10-04). Left to Sadpan, the author of SailwindCoop and SailwindPlayerModel, to add to those mods if they want it.
+- **Source:** Feature idea; vanilla behavior with the SailwindCoop and SailwindPlayerModel mods.
+- **Area:** look and aim / third-person camera
+- **Steps:** With SailwindCoop and SailwindPlayerModel installed, press C to switch to the third-person view and try to use or pick up an item.
+- **Expected:** Possibly allow aiming and using items from that view, since those mods make it a real third-person player view, not just a boat-steering camera.
+- **Actual:** Items can't be targeted or used from that view.
+- **Notes:** C is vanilla `BoatCamera` (the `CameraMode` toggle `MuteCameraModeSound` also patches). Vanilla `GoPointer.DoRaycast` clears the target whenever `BoatCamera.on`, and since 0.3.2 the look fixes follow the same rule through `LookRay.VanillaAims`. Allowing use would mean letting `DoRaycast` aim while `BoatCamera.on` (likely only when SailwindPlayerModel is installed), casting from the right point (the player model's view, not the orbiting camera), and dropping the `BoatCamera.on` check from `VanillaAims` in the same case. Check how SailwindCoop and SailwindPlayerModel handle C before deciding.
+- **If Sadpan adds it:** SailwindPlayerModel's follow view sets `BoatCamera.on` (its `PlayerOrbitCamera` patch on `BoatCamera.Update`; `PlayerOrbitCamera.Following` is a public static flag), so vanilla `GoPointer.DoRaycast` stops aiming there. Dizzy Fixes' look fixes follow the same rule through `LookRay.VanillaAims` (`LookRayPatches.cs`), so they'd need a matching exception, e.g. treat `PlayerOrbitCamera.Following` as aiming, read through reflection so there's no hard dependency.
+
+### Mooring throw distance is labeled feet but is meters
+
+- **Reported:** 2026-10-02
+- **Status:** Will not fix (decided 2026-10-04). Left as is for now; the entry stays in case it comes up again.
+- **Area:** mooring / config
+- **Steps:** Read the `RightClickNearestDockMooringFeet` description in `com.dizzy.sailwind.fixes.cfg` or the README fixes table.
+- **Expected:** The label matches the unit the value is used in.
+- **Actual:** The config and README say "in-game feet (world units)", but `DockMooringSnap.Range` uses the value directly as world units. Sailwind's world units are meters (Unity's convention; 9,000 units per degree of latitude, about 1.8 units of arm reach), so the default 15 is about 15 m, not 15 ft.
+- **Notes:** Fix the wording in `FixesConfig.cs` and `README.md`. Renaming the key (for example to `RightClickNearestDockMooringMeters`) would orphan the value in existing configs, so either keep the key and fix only the text, or migrate the old value.
 
 ## Watch list
 

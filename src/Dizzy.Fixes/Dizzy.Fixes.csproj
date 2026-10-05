@@ -4,7 +4,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>Dizzy.Fixes</AssemblyName>
     <Product>Dizzy Sailwind Fixes</Product>
-    <Version>0.3.4</Version>
+    <Version>0.3.5</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>

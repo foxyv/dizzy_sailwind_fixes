@@ -17,7 +17,9 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> PreferMooredDockLineLook;
         internal static ConfigEntry<bool> RightClickBoatMooringCastOff;
         internal static ConfigEntry<bool> HideInventoryOnNeedsWarning;
+        internal static ConfigEntry<bool> AnchorNeedsBarsOnFeedback;
         internal static ConfigEntry<bool> PourSoupIntoMug;
+        internal static ConfigEntry<bool> PourFromHeldBarrel;
         internal static ConfigEntry<bool> KeepChipLogDeployed;
         internal static ConfigEntry<bool> PreventBoatCacheSpawnLoop;
         internal static ConfigEntry<bool> KeepMirageMountainMap;
@@ -120,11 +122,23 @@ namespace Dizzy.Fixes
                 true,
                 "Do not draw hotbar items on top of the hunger, thirst, or sleep bars. Vanilla scales those items with the whole needs UI, so they stack on the bars whenever a need flashes.");
 
+            AnchorNeedsBarsOnFeedback = config.Bind(
+                "Fixes",
+                "AnchorNeedsBarsOnFeedback",
+                true,
+                "Eating or drinking shows the hunger, thirst and sleep bars facing you. Vanilla leaves them on the VR hand anchor until you first open the inventory or get a needs warning, so until then they pop up twisted off to one side.");
+
             PourSoupIntoMug = config.Bind(
                 "Fixes",
                 "PourSoupIntoMug",
                 true,
                 "Pour soup from a pot into a mug or cup, then drink it. Leftover fractional soup (vanilla mugs only spill at 1, 2, or 3 units) can still be drunk, dumped, or poured back. Vanilla only pours water into the pot and drinks from the pot itself; clicking an empty mug places it instead.");
+
+            PourFromHeldBarrel = config.Bind(
+                "Fixes",
+                "PourFromHeldBarrel",
+                true,
+                "Right-click while holding a barrel to pour it into the container you're looking at: another barrel, a bottle, bucket or mug, or (water only) a kettle or pot. Vanilla right-click only lifts the barrel to drink, and left-clicking another barrel fills the one you're holding instead.");
 
             KeepChipLogDeployed = config.Bind(
                 "Fixes",
