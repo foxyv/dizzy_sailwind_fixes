@@ -19,7 +19,9 @@ Source: decompile (`FloatingOriginManager`, `Sun`), data (`Sun` in `level24`).
 | Time speed | 0.008 game hours per real second | `Sun.timescale` (scene value; `initialTimescale` is copied from it in `Start`) |
 | 1 game hour | 125 real seconds | 1 / 0.008 / 3600 |
 | 1 game day | 3,000 real seconds (50 min) | `Sun.GetRealtimeDayLength()` = `24 / timescale` |
+| Game time vs real time | 28.8x | 86,400 / 3,000; 1 game minute is about 2.1 real seconds |
 | Time-skip sleep | 9x speed | `Sun.Update`: `Sleep.timeskipSleep` → `timescale = initialTimescale * 9` |
+| Time-skip day | 333 real seconds (about 5.6 min) | 3,000 / 9; 1 game hour is about 14 real seconds |
 | 1 in-game knot | 1.2 m/s (about 2.33 real knots) | 150 m per 125 s |
 | Chip log knot | 1 real knot = 0.514 m/s | The chip log dial reads real-world knots (see Chip log below), so it shows about 2.3x the in-game knots (nautical miles per game hour) |
 
@@ -27,6 +29,8 @@ Source: decompile (`FloatingOriginManager`, `Sun`), data (`Sun` in `level24`).
 - **Dawn:** `dawnBorder = -0.147 * z + 10.853`, clamped to [6.16, 6.8], when `dawnBorderFromLatitude` is on.
 - **Time scale is fixed:** only the editor-only `Debugger` keys (Keypad 7: x1, Keypad 9: x100) change `Sun.initialTimescale`; no game setting does.
 - **Earth curvature:** `IslandHorizon.ApplyNewHorizon` drops islands by `d^2 / (2 * 515662)`, so the horizon uses a radius of about 516 km.
+- **Implied planet:** 360° × 9 km = 3,240 km around, 515.7 km radius, about 1,030 km across. The horizon radius above is exactly 9,000 × 360 / 2π, so the curvature and the degree scale describe the same planet. That's about 1/12.4 of Earth (111.3 km per degree, 40,075 km around), a little bigger than the dwarf planet Ceres (about 470 km radius). It's only implied: the map is flat and doesn't wrap.
+- **Implied spin:** one turn per game day, so the sky moves 15° per game hour, as on Earth, which is 7.2° per real minute. The equator would move 135 km per game hour (900 in-game knots), which is 1,080 m/s in real time (3,888 km/h, about Mach 3.1, 2.3x Earth's 465 m/s). On a real sphere that scales with cos(latitude), about 874 m/s at the 36° origin. Nothing rotates in game; the sun and sky move over the flat map. Derived from the figures above, not from code.
 - **`Speedometer`** shows `velocity * 1.944` "knots" and `* 3.6` km/h, real-world units of world units per real second. It's part of the hidden build debug mode: hold P+N and press T (`Debugger.buildDebugModeOn`), which also turns on god mode and works in normal builds. Speedometers sit on a few boats and test objects in `level24`.
 
 ## Floating origin
