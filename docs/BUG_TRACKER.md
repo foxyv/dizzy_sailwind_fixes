@@ -36,17 +36,6 @@ Copy this template for a new entry:
 - **Actual:** The container or barrel shows its look highlight the whole time you're placing.
 - **Notes:** Vanilla keeps calling `Look()` on the surface while you hold an item over it (`GoPointer.DoRaycast`), and its place preview (`GoPointer.LateUpdate`) depends on that surface staying `pointedAtButton`, so `GoPointerButton.UpdateColor` draws the looked-at outline. Tables have no visible outline, so it only shows on items like crates and barrels. A fix would have to hide the outline without clearing `pointedAtButton`, e.g. a prefix on `UpdateColor` for the placement target (see how `DropBigCrateOutlinePatch` suppresses outlines). Decide first whether it applies only to pipes and quadrants or to every placed item.
 
-### Items from an open crate get added to a nearby stove
-
-- **Reported:** 2026-10-02
-- **Area:** stoves / crates
-- **Steps:** Place a crate next to a stove, then open the crate.
-- **Expected:** The crate's items stay in the crate's grid.
-- **Actual:** Items in the crate grid that overlap the stove are sometimes added to the stove.
-- **Notes:** Happens only sometimes. Cause confirmed with the debug probes (2026-10-04): tuna still linked to its crate (`currentCrateId` 1002797246) entered stove cook slots 8 times, at least 3 of them into an empty slot, with the crate's grid open (food on layer 2) and closed (layer 0).
-    - **Cause:** vanilla `StoveCookTrigger.OnTriggerEnter` inserts any `CookableFood` that enters an empty cook slot (`!currentFood && !stove.held`), with no check for whether the food is in a crate (`SaveablePrefab.currentCrateId`, layer 26 ItemInCrate). While a crate's grid is open, its items are laid out in the world at the grid squares (`CrateInventory.LateUpdate` stops pinning them to the crate), so food whose square overlaps a stove's cook slot gets pulled into the stove. "Sometimes" would come down to whether a square overlaps an empty slot.
-    - **Likely fix:** a prefix on `StoveCookTrigger.OnTriggerEnter` that skips food with `currentCrateId > 0` (or on layer 26). Check that taking food out of a crate onto the stove still works, since `WithdrawItem` clears `currentCrateId` first.
-
 ## Will not fix
 
 ### Allow using items from the third-person view (C) with co-op and player model mods
@@ -100,6 +89,17 @@ Copy this template for a new entry:
 - **If a bug points here:** the dropped step 7 approach was a `LookRay.BehindBlocker(ray, distance)` check. It finds the nearest non-trigger hit with no `GoPointerButton` on it or its parents (walls, decks, hulls, terrain; items and furniture never block), then each fix skips targets more than 5 cm past it. That only covers walls on layers the look ray hits. Walls on layers 12 and 19 would need a second cast with those layers added, but not Player (11), BoatCapsule (13) or invis (16), which would block everything on a boat or at a dock. Consider making it an optional, off-by-default fix.
 
 ## Fixed
+
+### Items from an open crate get added to a nearby stove
+
+- **Reported:** 2026-10-02 (again on 2026-10-05: also the smoker)
+- **Fixed:** 2026-10-05 in 0.3.6 (`KeepCrateItemsOutOfStove`, `CrateStovePatches.cs`)
+- **Source:** Vanilla bug.
+- **Area:** stoves / crates
+- **Actual (before the fix):** Opening a crate next to a stove or smoker pulled the crate items whose grid squares overlapped the stove into it, while they still half stayed in the crate.
+- **Cause:** while a crate's grid is open, `CrateInventory.LateUpdate` stops pinning its items to the crate and they're laid out in the world on the grid squares. `StoveCookTrigger.OnTriggerEnter` inserts any `CookableFood` that enters an empty cook slot (smokers are stoves with `smoker` set and use the same trigger), and `StoveFuel.Update` calls `StoveFuelTrigger.InsertFuel` for any firewood touching the fuel trigger that isn't held. Neither checks `SaveablePrefab.currentCrateId`, so the item ended up in the stove and still in the crate's `containedItems`. The debug probes (2026-10-04) caught crate-linked tuna entering empty cook slots with the grid open (layer 2) and closed (layer 0), so the layer isn't a reliable marker.
+- **Fix:** prefixes on `StoveCookTrigger.OnTriggerEnter` and `StoveFuelTrigger.InsertFuel` skip items with `currentCrateId > 0`. `CrateInventory.WithdrawItem` clears it before an item is free, so food and firewood taken out of a crate still cook and burn. Dizzy.FirewoodBundle's `InsertFuel` prefix (bundles stay out) also only skips, so the two don't conflict.
+- **Verified:** playtest on the Testing Rig pack, 0.3.6: opening a crate next to a stove and a smoker left its items in the crate.
 
 ### Hotbar items picked up in a player house vanish while you're away from the house
 

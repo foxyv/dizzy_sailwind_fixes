@@ -23,7 +23,7 @@ Release 0.3.1 after step 4 (low-risk steps), and 0.3.2 after steps 5-7.
 
 ## Handled or by design
 
-All 16 remaining warnings are handled or by design; modcheck can't tell.
+All 17 remaining warnings are handled or by design; modcheck can't tell.
 
 | Rule | Where | Why it stays |
 | --- | --- | --- |
@@ -40,3 +40,4 @@ All 16 remaining warnings are handled or by design; modcheck can't tell.
 | SW606 | `UncleanableHullCleaningPatches.cs` | Finalizer swallows only after gold was charged, on purpose. |
 | SW601 | `MirageMountainMapPatches.cs` | Skipping `DestroyItem` protects a held or slotted map; the slot bug is fixed. |
 | SW801 x4 | FirewoodBundle, Nudge, Calendar overlaps | FirewoodBundle and Nudge are safe; Dizzy.Calendar is retired and never deployed (its `ItemRigidbody.FixedUpdate` overlap is now reported on `HouseItemsPatches.cs`). |
+| SW801 | `CrateStovePatches.cs` | Added in 0.3.6. Dizzy.FirewoodBundle's `StoveFuelTrigger.InsertFuel` prefix also only skips the insert (bundles stay out of the fire), with no other side effects, so order doesn't matter: the insert is skipped if either says so. |
