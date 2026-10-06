@@ -37,6 +37,7 @@ namespace Dizzy.Fixes
         internal static ConfigEntry<bool> ReleaseDestroyedHeldItem;
         internal static ConfigEntry<bool> SkipSmoothOriginShift;
         internal static ConfigEntry<bool> KeepCrateContentsWithBoat;
+        internal static ConfigEntry<bool> KeepCrateItemsOutOfStove;
         internal static ConfigEntry<bool> DropBigCratePastOtherCrates;
         internal static ConfigEntry<bool> KeepMissionListPage;
         internal static ConfigEntry<bool> KeepHouseItemsWhenAway;
@@ -244,6 +245,12 @@ namespace Dizzy.Fixes
                 "KeepCrateContentsWithBoat",
                 true,
                 "Keep crate contents on the same boat as the crate. Unsealing a firewood or hook box never gives those pieces a boat save parent, so a reload away from that boat spawns them in the world, they look for the crate once, and they fall out. Opening a crate with more pieces than squares no longer throws and drops the rest.");
+
+            KeepCrateItemsOutOfStove = config.Bind(
+                "Fixes",
+                "KeepCrateItemsOutOfStove",
+                true,
+                "Food and firewood in an open crate next to a stove or smoker stay in the crate. Vanilla lays the crate's items out on its grid while it's open, and the stove pulls in any that touch its cook or fuel slot.");
 
             DropBigCratePastOtherCrates = config.Bind(
                 "Fixes",
