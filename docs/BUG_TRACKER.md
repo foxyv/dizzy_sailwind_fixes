@@ -90,6 +90,17 @@ Copy this template for a new entry:
 
 ## Fixed
 
+### Big carried items (stove, drying rack, smoking rack) vanish below deck on the large dhow
+
+- **Reported:** 2026-10-25
+- **Fixed:** 2026-10-25 (`PreventHeldItemVanishing`, `HeldItemDecollisionPatches.cs`)
+- **Source:** Vanilla bug.
+- **Area:** held items / large dhow
+- **Actual (before the fix):** While carrying a stove, drying rack or smoking rack in the large dhow's galley or hold, the item sometimes vanished and stayed gone, with NullReference/NaN errors in the log.
+- **Cause:** `GoPointer.LateUpdate` holds a big item at `pointer.TransformPoint(decolLocalPos)`, adding `PickupableItemCollisionChecker.GetDecollision()` each frame and range-checking with `<` and `>` only, which are false for NaN. `GetDecollision` ignores the return value of `Physics.ComputePenetration`. For the dhow's non-convex mesh colliders (for example `Cube_023`, `mast_001`, `Cube_043`) it returns false and leaves `direction` undefined, sometimes garbage such as 1.7e15, and garbage times a distance of zero is NaN. `decolLocalPos` then stays NaN (a lerp from NaN is NaN) until the item is picked up again. It is intermittent because the garbage varies.
+- **Fix:** a prefix on `GetDecollision` that replaces it with the same sum, skipping destroyed colliders, colliders `ComputePenetration` fails for, and non-finite results.
+- **Verified:** with the guard in a diagnostic plugin, a playtest in the galley gave 0 NaN warnings. Not yet playtested with this fix.
+
 ### Items from an open crate get added to a nearby stove
 
 - **Reported:** 2026-10-02 (again on 2026-10-05: also the smoker)

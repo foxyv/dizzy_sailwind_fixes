@@ -5,6 +5,7 @@ namespace Dizzy.Fixes
     internal static class FixesConfig
     {
         internal static ConfigEntry<bool> PreventInventoryWithdrawSip;
+        internal static ConfigEntry<bool> PreventHeldItemVanishing;
         internal static ConfigEntry<bool> PreventFailedTradeBookSale;
         internal static ConfigEntry<bool> SkipUncleanableHullCleaning;
         internal static ConfigEntry<bool> StabilizeStoveItemHover;
@@ -275,6 +276,12 @@ namespace Dizzy.Fixes
                 "KeepHotbarItemsWhenAway",
                 true,
                 "Items you put in your hotbar inside a player house stay in your hotbar when you sail away. Vanilla still counts them as house items, so they vanish from the hotbar while you're about 1 km from the house.");
+
+            PreventHeldItemVanishing = config.Bind(
+                "Fixes",
+                "PreventHeldItemVanishing",
+                true,
+                "A big item you carry, such as a stove or a drying rack, no longer disappears for good while you carry it below deck on the large dhow. Vanilla can work out a bad push-out when the item touches the hull and sends the item to an invalid position.");
 
             DelayBoatCacheSpawn = config.Bind(
                 "Debug",
